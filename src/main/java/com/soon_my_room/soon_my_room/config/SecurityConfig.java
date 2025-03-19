@@ -14,31 +14,31 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+  @Bean
+  public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
+  }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(authz -> authz
-                        // Swagger UI 접근 허용
-                        .requestMatchers(
-                                new AntPathRequestMatcher("/swagger-ui/**"),
-                                new AntPathRequestMatcher("/v3/api-docs/**"),
-                                new AntPathRequestMatcher("/swagger-resources/**"),
-                                new AntPathRequestMatcher("/webjars/**")
-                        ).permitAll()
-                        // 회원가입 API 접근 허용
-                        .requestMatchers(
-                                new AntPathRequestMatcher("/user")
-                        ).permitAll()
-                        // 나머지 API는 인증 필요
-                        .anyRequest().authenticated()
-                );
+  @Bean
+  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http.csrf(AbstractHttpConfigurer::disable)
+        .authorizeHttpRequests(
+            authz ->
+                authz
+                    // Swagger UI 접근 허용
+                    .requestMatchers(
+                        new AntPathRequestMatcher("/swagger-ui/**"),
+                        new AntPathRequestMatcher("/v3/api-docs/**"),
+                        new AntPathRequestMatcher("/swagger-resources/**"),
+                        new AntPathRequestMatcher("/webjars/**"))
+                    .permitAll()
+                    // 회원가입 API 접근 허용
+                    .requestMatchers(new AntPathRequestMatcher("/user"))
+                    .permitAll()
+                    // 나머지 API는 인증 필요
+                    .anyRequest()
+                    .authenticated());
 
-        return http.build();
-    }
+    return http.build();
+  }
 }

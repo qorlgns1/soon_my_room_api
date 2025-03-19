@@ -12,36 +12,35 @@ import lombok.NoArgsConstructor;
 
 public class UserRequestDTO {
 
+  @Data
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class RegisterRequest {
+    @Valid private User user;
+
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class RegisterRequest {
-        @Valid
-        private User user;
+    public static class User {
+      @NotBlank(message = "필수 입력사항을 입력해주세요.")
+      private String username;
 
-        @Data
-        @Builder
-        @NoArgsConstructor
-        @AllArgsConstructor
-        public static class User {
-            @NotBlank(message = "필수 입력사항을 입력해주세요.")
-            private String username;
+      @NotBlank(message = "필수 입력사항을 입력해주세요.")
+      @Email(message = "잘못된 이메일 형식입니다.")
+      private String email;
 
-            @NotBlank(message = "필수 입력사항을 입력해주세요.")
-            @Email(message = "잘못된 이메일 형식입니다.")
-            private String email;
+      @NotBlank(message = "필수 입력사항을 입력해주세요.")
+      @Size(min = 6, message = "비밀번호는 6자 이상이어야 합니다.")
+      private String password;
 
-            @NotBlank(message = "필수 입력사항을 입력해주세요.")
-            @Size(min = 6, message = "비밀번호는 6자 이상이어야 합니다.")
-            private String password;
+      @NotBlank(message = "필수 입력사항을 입력해주세요.")
+      @Pattern(regexp = "^[a-zA-Z0-9._]+$", message = "영문, 숫자, 밑줄, 마침표만 사용할 수 있습니다.")
+      private String accountname;
 
-            @NotBlank(message = "필수 입력사항을 입력해주세요.")
-            @Pattern(regexp = "^[a-zA-Z0-9._]+$", message = "영문, 숫자, 밑줄, 마침표만 사용할 수 있습니다.")
-            private String accountname;
-
-            private String intro;
-            private String image;
-        }
+      private String intro;
+      private String image;
     }
+  }
 }
