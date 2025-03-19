@@ -33,7 +33,9 @@ public class SecurityConfig {
                         new AntPathRequestMatcher("/webjars/**"))
                     .permitAll()
                     // 회원가입 API 접근 허용
-                    .requestMatchers(new AntPathRequestMatcher("/user"))
+                    .requestMatchers(
+                        new AntPathRequestMatcher("/user"),
+                        new AntPathRequestMatcher("/user/accountnamevalid"))
                     .permitAll()
                     // 나머지 API는 인증 필요
                     .anyRequest()

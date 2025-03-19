@@ -43,4 +43,22 @@ public class UserRequestDTO {
       private String image;
     }
   }
+
+  @Data
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class AccountValidRequest {
+    @Valid private AccountValidUser user;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AccountValidUser {
+      @NotBlank(message = "계정ID는 필수 입력사항입니다.")
+      @Pattern(regexp = "^[a-zA-Z0-9._]+$", message = "영문, 숫자, 밑줄, 마침표만 사용할 수 있습니다.")
+      private String accountname;
+    }
+  }
 }

@@ -63,4 +63,13 @@ public class UserService {
         .findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다: " + id));
   }
+
+  @Transactional(readOnly = true)
+  public UserResponseDTO.AccountValidResponse validateAccountname(String accountname) {
+    boolean exists = userRepository.existsByAccountname(accountname);
+
+    String message = exists ? "이미 가입된 계정ID 입니다." : "사용 가능한 계정ID 입니다.";
+
+    return UserResponseDTO.AccountValidResponse.builder().message(message).build();
+  }
 }

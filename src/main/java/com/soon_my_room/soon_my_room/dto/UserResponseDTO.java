@@ -43,4 +43,12 @@ public class UserResponseDTO {
       return RegisterResponse.builder().message("회원가입 성공").user(userData).build();
     }
   }
+
+  @Data
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class AccountValidResponse {
+    private String message;
+  }
 }
