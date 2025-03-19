@@ -1,10 +1,6 @@
 package com.soon_my_room.soon_my_room.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
@@ -59,12 +55,12 @@ public class User {
 
   @Builder.Default private boolean active = true;
 
-  // Pre-persist hook to set createdAt automatically
+  @PrePersist
   public void prePersist() {
     this.createdAt = LocalDateTime.now();
   }
 
-  // Pre-update hook to set updatedAt automatically
+  @PreUpdate
   public void preUpdate() {
     this.updatedAt = LocalDateTime.now();
   }
