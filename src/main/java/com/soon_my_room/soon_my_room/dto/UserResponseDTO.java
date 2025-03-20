@@ -51,4 +51,12 @@ public class UserResponseDTO {
   public static class AccountValidResponse {
     private String message;
   }
+
+  @Data
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class EmailValidResponse {
+    private String message;
+  }
 }

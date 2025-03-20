@@ -57,4 +57,21 @@ public class UserController {
 
     return ResponseEntity.ok(response);
   }
+
+  @Operation(summary = "이메일 검증", description = "회원가입 시 입력한 이메일이 사용 가능한지 검증합니다.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "검증 성공"),
+        @ApiResponse(responseCode = "400", description = "유효성 검증 실패")
+      })
+  @PostMapping("/emailvalid")
+  public ResponseEntity<UserResponseDTO.EmailValidResponse> validateEmail(
+      @Parameter(description = "이메일 정보", required = true) @Valid @RequestBody
+          UserRequestDTO.EmailValidRequest requestDTO) {
+
+    UserResponseDTO.EmailValidResponse response =
+        userService.validateEmail(requestDTO.getUser().getEmail());
+
+    return ResponseEntity.ok(response);
+  }
 }

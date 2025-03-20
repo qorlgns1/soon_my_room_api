@@ -61,4 +61,22 @@ public class UserRequestDTO {
       private String accountname;
     }
   }
+
+  @Data
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class EmailValidRequest {
+    @Valid private EmailValidUser user;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class EmailValidUser {
+      @NotBlank(message = "이메일은 필수 입력사항입니다.")
+      @Email(message = "잘못된 이메일 형식입니다.")
+      private String email;
+    }
+  }
 }

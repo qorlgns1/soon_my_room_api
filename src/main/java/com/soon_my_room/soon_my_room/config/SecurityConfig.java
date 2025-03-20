@@ -32,10 +32,11 @@ public class SecurityConfig {
                         new AntPathRequestMatcher("/swagger-resources/**"),
                         new AntPathRequestMatcher("/webjars/**"))
                     .permitAll()
-                    // 회원가입 API 접근 허용
+                    // 회원가입 및 유효성 검증 API 접근 허용
                     .requestMatchers(
                         new AntPathRequestMatcher("/user"),
-                        new AntPathRequestMatcher("/user/accountnamevalid"))
+                        new AntPathRequestMatcher("/user/accountnamevalid"),
+                        new AntPathRequestMatcher("/user/emailvalid"))
                     .permitAll()
                     // 나머지 API는 인증 필요
                     .anyRequest()

@@ -72,4 +72,14 @@ public class UserService {
 
     return UserResponseDTO.AccountValidResponse.builder().message(message).build();
   }
+
+  /** 이메일 중복 검증 */
+  @Transactional(readOnly = true)
+  public UserResponseDTO.EmailValidResponse validateEmail(String email) {
+    boolean exists = userRepository.existsByEmail(email);
+
+    String message = exists ? "이미 가입된 이메일 주소 입니다." : "사용 가능한 이메일 입니다.";
+
+    return UserResponseDTO.EmailValidResponse.builder().message(message).build();
+  }
 }
