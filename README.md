@@ -111,7 +111,9 @@ src/
 │   │   ├── security/         # JWT 인증 및 보안 처리
 │   │   └── service/          # 비즈니스 로직
 │   └── resources/
-│       └── application.properties  # 애플리케이션 설정
+│       ├── application.properties      # 기본 애플리케이션 설정
+│       ├── application-dev.properties  # 개발 환경 설정
+│       └── application-prod.properties # 운영 환경 설정
 └── test/                     # 테스트 코드
 ```
 
@@ -148,6 +150,7 @@ src/
    SUPABASE_BUCKET_POSTS=post-images
    SUPABASE_BUCKET_PRODUCTS=product-images
    SUPABASE_BUCKET_DEFAULT=default
+   CORS_ALLOWED_ORIGINS=http://localhost:3000,https://soon-my-room.com
    ```
 
 ### Supabase 설정
@@ -165,8 +168,11 @@ src/
 # 프로젝트 빌드
 ./gradlew build
 
-# 서버 실행
-./gradlew bootRun
+# 서버 실행 (개발 환경)
+./gradlew bootRun --args='--spring.profiles.active=dev'
+
+# 서버 실행 (운영 환경)
+./gradlew bootRun --args='--spring.profiles.active=prod'
 ```
 
 기본적으로 서버는 `http://localhost:9000`에서 실행됩니다.
@@ -192,6 +198,7 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 서버 실행 후 다
 - `POST /user/login`: 로그인
 - `POST /user/accountnamevalid`: 계정명 유효성 검증
 - `POST /user/emailvalid`: 이메일 유효성 검증
+- `GET /user/checktoken`: 토큰 유효성 검증
 
 ### 프로필 및 팔로우 ✅
 
@@ -207,19 +214,27 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 서버 실행 후 다
 - `POST /image/uploadfile`: 단일 이미지 업로드
 - `POST /image/uploadfiles`: 다중 이미지 업로드 (최대 3개)
 
-### 게시물 관리 (개발 예정)
+### 게시물 관리 ✅
 
-- `GET /post`: 게시물 목록 조회
+- `GET /post/feed`: 팔로잉 게시물 목록 조회 (피드)
 - `POST /post`: 게시물 작성
 - `GET /post/:postId`: 게시물 상세 조회
 - `PUT /post/:postId`: 게시물 수정
 - `DELETE /post/:postId`: 게시물 삭제
+- `GET /post/:accountname/userpost`: 특정 사용자의 게시물 목록 조회
+- `POST /post/:postId/report`: 게시물 신고
 
-### 댓글 관리 (개발 예정)
+### 좋아요 관리 ✅
+
+- `POST /post/:postId/heart`: 게시물 좋아요
+- `DELETE /post/:postId/unheart`: 게시물 좋아요 취소
+
+### 댓글 관리 ✅
 
 - `GET /post/:postId/comments`: 댓글 목록 조회
 - `POST /post/:postId/comments`: 댓글 작성
 - `DELETE /post/:postId/comments/:commentId`: 댓글 삭제
+- `POST /post/:postId/comments/:commentId/report`: 댓글 신고
 
 ### 상품 관리 (개발 예정)
 
@@ -236,15 +251,17 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 서버 실행 후 다
     - 데이터베이스 연결 및 JPA 설정
     - Spring Security 및 JWT 인증 구현
     - Supabase Storage 연동
+    - CORS 설정 및 환경별 프로필 구성
 
-2. **핵심 기능 개발** 🚧
+2. **핵심 기능 개발**
     - 사용자 관리 API (회원가입, 로그인) ✅
     - 프로필 관리 API ✅
     - 팔로우/팔로잉 기능 ✅
     - 이미지 업로드 기능 ✅
-    - 게시물 및 댓글 관련 API
-    - 좋아요 기능
-    - 상품 등록 및 관리 API
+    - 게시물 관련 API ✅
+    - 좋아요 기능 ✅
+    - 댓글 관련 API ✅
+    - 상품 등록 및 관리 API 🚧
 
 3. **테스트 및 문서화** 🚧
     - 단위 테스트 및 통합 테스트 작성
