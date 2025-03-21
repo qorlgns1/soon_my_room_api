@@ -166,12 +166,21 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 서버 실행 후 다
 
 ## 주요 API 엔드포인트
 
-### 사용자 관리
+### 사용자 관리 ✅
 
 - `POST /user`: 회원가입
 - `POST /user/login`: 로그인
 - `POST /user/accountnamevalid`: 계정명 유효성 검증
 - `POST /user/emailvalid`: 이메일 유효성 검증
+
+### 프로필 및 팔로우 ✅
+
+- `PUT /user`: 프로필 수정
+- `GET /profile/:accountname`: 프로필 조회
+- `POST /profile/:accountname/follow`: 팔로우
+- `DELETE /profile/:accountname/unfollow`: 언팔로우
+- `GET /profile/:accountname/follower`: 팔로워 목록 조회
+- `GET /profile/:accountname/following`: 팔로잉 목록 조회
 
 ### 게시물 관리 (개발 예정)
 
@@ -186,14 +195,6 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 서버 실행 후 다
 - `GET /post/:postId/comments`: 댓글 목록 조회
 - `POST /post/:postId/comments`: 댓글 작성
 - `DELETE /post/:postId/comments/:commentId`: 댓글 삭제
-
-### 프로필 및 팔로우 (개발 예정)
-
-- `GET /profile/:accountname`: 프로필 조회
-- `GET /profile/:accountname/follower`: 팔로워 목록 조회
-- `GET /profile/:accountname/following`: 팔로잉 목록 조회
-- `POST /profile/:accountname/follow`: 팔로우
-- `DELETE /profile/:accountname/follow`: 언팔로우
 
 ### 상품 관리 (개발 예정)
 
@@ -212,9 +213,9 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 서버 실행 후 다
 
 2. **핵심 기능 개발** 🚧
     - 사용자 관리 API (회원가입, 로그인) ✅
-    - 프로필 관리 API
+    - 프로필 관리 API ✅
+    - 팔로우/팔로잉 기능 ✅
     - 게시물 및 댓글 관련 API
-    - 팔로우/팔로잉 기능
     - 좋아요 기능
     - 상품 등록 및 관리 API
 
