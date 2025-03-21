@@ -11,7 +11,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 public class UserRequestDTO {
-
   @Data
   @Builder
   @NoArgsConstructor
@@ -77,6 +76,30 @@ public class UserRequestDTO {
       @NotBlank(message = "이메일은 필수 입력사항입니다.")
       @Email(message = "잘못된 이메일 형식입니다.")
       private String email;
+    }
+  }
+
+  @Data
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class UpdateProfileRequest {
+    @Valid private ProfileUser user;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ProfileUser {
+      @NotBlank(message = "사용자 이름은 필수 입력사항입니다.")
+      private String username;
+
+      @NotBlank(message = "계정ID는 필수 입력사항입니다.")
+      @Pattern(regexp = "^[a-zA-Z0-9._]+$", message = "영문, 숫자, 밑줄, 마침표만 사용할 수 있습니다.")
+      private String accountname;
+
+      private String intro;
+      private String image;
     }
   }
 }

@@ -1,11 +1,15 @@
 package com.soon_my_room.soon_my_room.service;
 
+import com.soon_my_room.soon_my_room.dto.ProfileDTO;
 import com.soon_my_room.soon_my_room.dto.UserRequestDTO;
 import com.soon_my_room.soon_my_room.dto.UserResponseDTO;
 import com.soon_my_room.soon_my_room.exception.DuplicateResourceException;
 import com.soon_my_room.soon_my_room.exception.ResourceNotFoundException;
 import com.soon_my_room.soon_my_room.model.User;
+import com.soon_my_room.soon_my_room.repository.FollowRepository;
 import com.soon_my_room.soon_my_room.repository.UserRepository;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
   private final UserRepository userRepository;
+  private final FollowRepository followRepository;
   private final PasswordEncoder passwordEncoder;
 
   /** 회원가입 처리 */
@@ -81,5 +86,58 @@ public class UserService {
     String message = exists ? "이미 가입된 이메일 주소 입니다." : "사용 가능한 이메일 입니다.";
 
     return UserResponseDTO.EmailValidResponse.builder().message(message).build();
+  }
+
+  /** 프로필 업데이트 */
+  @Transactional
+  public ProfileDTO.ProfileResponse updateProfile(
+      String email, UserRequestDTO.UpdateProfileRequest.ProfileUser profileUser) {
+    // 현재 사용자 찾기
+    User user =
+        userRepository
+            .findByEmail(email)
+            .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
+
+    // 계정명이 변경되었고, 이미 다른 사용자가 사용 중인지 확인
+    if (!user.getAccountname().equals(profileUser.getAccountname())
+        && userRepository.existsByAccountname(profileUser.getAccountname())) {
+      throw new DuplicateResourceException("이미 사용중이 계정 ID입니다.");
+    }
+
+    // 사용자 정보 업데이트
+    user.setUsername(profileUser.getUsername());
+    user.setAccountname(profileUser.getAccountname());
+    user.setIntro(profileUser.getIntro());
+
+    // 이미지가 제공되었을 경우에만 업데이트
+    if (profileUser.getImage() != null && !profileUser.getImage().trim().isEmpty()) {
+      user.setImage(profileUser.getImage());
+    }
+
+    // 저장
+    userRepository.save(user);
+
+    // 팔로워/팔로잉 목록 조회
+    List<String> followers =
+        followRepository.findByFollowingId(user.getId()).stream()
+            .map(follow -> follow.getFollowerId())
+            .collect(Collectors.toList());
+
+    List<String> following =
+        followRepository.findByFollowerId(user.getId()).stream()
+            .map(follow -> follow.getFollowingId())
+            .collect(Collectors.toList());
+
+    // 응답 생성
+    ProfileDTO.Profile profile =
+        ProfileDTO.Profile.fromEntity(
+            user,
+            false, // 자신의 프로필이므로 isfollow는 false
+            following,
+            followers,
+            following.size(),
+            followers.size());
+
+    return ProfileDTO.ProfileResponse.builder().profile(profile).build();
   }
 }
