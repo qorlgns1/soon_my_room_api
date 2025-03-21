@@ -1,5 +1,6 @@
 package com.soon_my_room.soon_my_room.controller;
 
+import com.soon_my_room.soon_my_room.dto.AuthResponseDTO;
 import com.soon_my_room.soon_my_room.dto.LoginRequestDTO;
 import com.soon_my_room.soon_my_room.dto.LoginResponseDTO;
 import com.soon_my_room.soon_my_room.dto.UserRequestDTO;
@@ -10,13 +11,16 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -91,6 +95,32 @@ public class UserController {
     UserResponseDTO.EmailValidResponse response =
         userService.validateEmail(requestDTO.getUser().getEmail());
 
+    return ResponseEntity.ok(response);
+  }
+
+  @Operation(
+      summary = "토큰 검증",
+      description = "JWT 토큰의 유효성을 검증합니다.<br>" + "상단 **Authorize** 버튼에 헤더값을 추가하고 테스트 해주세요.",
+      security = {@SecurityRequirement(name = "bearerAuth")})
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "검증 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 헤더가 누락되었거나 형식이 잘못됨")
+      })
+  @GetMapping("/checktoken")
+  public ResponseEntity<AuthResponseDTO.TokenValidResponse> checkToken(
+      @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+    // Authorization 헤더가 없거나 비어있는 경우 401 Unauthorized 반환
+    if (authHeader == null || authHeader.isEmpty() || !authHeader.startsWith("Bearer ")) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+          .body(AuthResponseDTO.TokenValidResponse.builder().isValid(false).build());
+    }
+
+    // Bearer 접두사 제거
+    String token = authHeader.substring(7);
+
+    AuthResponseDTO.TokenValidResponse response = authService.validateToken(token);
     return ResponseEntity.ok(response);
   }
 }
