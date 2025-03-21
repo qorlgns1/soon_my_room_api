@@ -1,7 +1,9 @@
 package com.soon_my_room.soon_my_room.config;
 
 import com.soon_my_room.soon_my_room.security.JwtAuthenticationFilter;
+import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,9 +19,6 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -76,7 +75,8 @@ public class SecurityConfig {
                         new AntPathRequestMatcher("/user/accountnamevalid"),
                         new AntPathRequestMatcher("/user/emailvalid"),
                         new AntPathRequestMatcher("/user/login"),
-                        new AntPathRequestMatcher("/user/checktoken"))
+                        new AntPathRequestMatcher("/user/checktoken"),
+                        new AntPathRequestMatcher("/post/**"))
                     .permitAll()
                     // 나머지 API는 인증 필요
                     .anyRequest()

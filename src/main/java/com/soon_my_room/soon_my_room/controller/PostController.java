@@ -98,21 +98,19 @@ public class PostController {
       })
   @GetMapping("/{accountname}/userpost")
   public ResponseEntity<?> getUserPosts(
-      @Parameter(description = "계정명", required = true) @PathVariable String accountname,
+      @PathVariable String accountname,
       @Parameter(description = "페이지당 게시글 수") @RequestParam(required = false) Integer limit,
       @Parameter(description = "건너뛸 게시글 수") @RequestParam(required = false) Integer skip,
       Authentication authentication) {
+    System.out.println("[시작]");
+    UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+    String currentUserEmail = userDetails.getUsername();
 
-    try {
-      UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-      String currentUserEmail = userDetails.getUsername();
+    PostDTO.PostResponse response =
+        postService.getUserPosts(accountname, currentUserEmail, limit, skip);
 
-      PostDTO.PostResponse response =
-          postService.getUserPosts(accountname, currentUserEmail, limit, skip);
-      return ResponseEntity.ok(response);
-    } catch (com.soon_my_room.soon_my_room.exception.ResourceNotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
-    }
+    System.out.println("[종료]");
+    return ResponseEntity.ok(response);
   }
 
   @Operation(
