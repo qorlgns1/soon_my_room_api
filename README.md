@@ -236,11 +236,11 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 서버 실행 후 다
 - `DELETE /post/:postId/comments/:commentId`: 댓글 삭제
 - `POST /post/:postId/comments/:commentId/report`: 댓글 신고
 
-### 상품 관리 (개발 예정)
+### 상품 관리 ✅
 
-- `GET /product`: 상품 목록 조회
+- `GET /product/:accountname`: 상품 목록 조회
 - `POST /product`: 상품 등록
-- `GET /product/:productId`: 상품 상세 조회
+- `GET /product/detail/:productId`: 상품 상세 조회
 - `PUT /product/:productId`: 상품 정보 수정
 - `DELETE /product/:productId`: 상품 삭제
 
@@ -261,7 +261,7 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 서버 실행 후 다
     - 게시물 관련 API ✅
     - 좋아요 기능 ✅
     - 댓글 관련 API ✅
-    - 상품 등록 및 관리 API 🚧
+    - 상품 등록 및 관리 API ✅
 
 3. **테스트 및 문서화** 🚧
     - 단위 테스트 및 통합 테스트 작성
