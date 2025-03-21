@@ -14,6 +14,7 @@
 - **프레임워크**: Spring Boot 3.4.3
 - **빌드 도구**: Gradle 8.13
 - **데이터베이스**: PostgreSQL (Supabase)
+- **파일 스토리지**: Supabase Storage (S3 호환 API)
 - **코드 스타일**: Google Java Format (Spotless 적용)
 
 ### 주요 의존성
@@ -22,6 +23,7 @@
 - **Spring Boot Starter Data JPA**: 데이터 액세스 계층
 - **Spring Boot Starter Security**: 인증 및 권한 관리
 - **Spring Boot Starter Validation**: 데이터 유효성 검증
+- **AWS S3 SDK**: Supabase Storage와 S3 호환 API 연동
 - **JWT**: 사용자 인증 토큰 관리 (jjwt 0.12.6)
 - **SpringDoc OpenAPI**: API 문서화 (Swagger UI)
 - **Lombok**: 반복 코드 제거
@@ -100,7 +102,7 @@ erDiagram
 src/
 ├── main/
 │   ├── java/com/soon_my_room/soon_my_room/
-│   │   ├── config/           # 스프링 설정 (보안, Swagger 등)
+│   │   ├── config/           # 스프링 설정 (보안, S3, Swagger 등)
 │   │   ├── controller/       # API 엔드포인트 정의
 │   │   ├── dto/              # 데이터 전송 객체
 │   │   ├── model/            # 엔티티 모델
@@ -120,6 +122,7 @@ src/
 - JDK 21 이상
 - Gradle 8.x 이상
 - PostgreSQL 데이터베이스
+- Supabase 프로젝트 (DB 및 Storage)
 
 ### 환경 설정
 
@@ -137,7 +140,24 @@ src/
    DB_URL=jdbc:postgresql://your_db_host:5432/your_db_name
    DB_USERNAME=your_db_username
    DB_PASSWORD=your_db_password
+   SUPABASE_ENDPOINT=https://your-project-id.supabase.co/storage/v1
+   SUPABASE_REGION=your-supabase-region
+   SUPABASE_ACCESS_KEY=your-supabase-access-key
+   SUPABASE_SECRET_KEY=your-supabase-secret-key
+   SUPABASE_BUCKET_PROFILES=user-profiles
+   SUPABASE_BUCKET_POSTS=post-images
+   SUPABASE_BUCKET_PRODUCTS=product-images
+   SUPABASE_BUCKET_DEFAULT=default
    ```
+
+### Supabase 설정
+
+1. Supabase 프로젝트 생성
+2. 데이터베이스 연결 정보 획득
+3. Storage 설정:
+    - `user-profiles`, `post-images`, `product-images`, `default` 버킷 생성
+    - 버킷 권한 설정 (RLS 정책 구성)
+    - API 키 획득 (access key & secret key)
 
 ### 빌드 및 실행
 
@@ -182,6 +202,11 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 서버 실행 후 다
 - `GET /profile/:accountname/follower`: 팔로워 목록 조회
 - `GET /profile/:accountname/following`: 팔로잉 목록 조회
 
+### 이미지 관리 ✅
+
+- `POST /image/uploadfile`: 단일 이미지 업로드
+- `POST /image/uploadfiles`: 다중 이미지 업로드 (최대 3개)
+
 ### 게시물 관리 (개발 예정)
 
 - `GET /post`: 게시물 목록 조회
@@ -210,11 +235,13 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 서버 실행 후 다
     - 프로젝트 구조 설정 및 의존성 관리
     - 데이터베이스 연결 및 JPA 설정
     - Spring Security 및 JWT 인증 구현
+    - Supabase Storage 연동
 
 2. **핵심 기능 개발** 🚧
     - 사용자 관리 API (회원가입, 로그인) ✅
     - 프로필 관리 API ✅
     - 팔로우/팔로잉 기능 ✅
+    - 이미지 업로드 기능 ✅
     - 게시물 및 댓글 관련 API
     - 좋아요 기능
     - 상품 등록 및 관리 API
