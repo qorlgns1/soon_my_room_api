@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -44,6 +45,16 @@ public class GlobalExceptionHandler {
     Map<String, String> error = new HashMap<>();
     error.put("error", e.getMessage());
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+  }
+
+  // 인증 예외 처리
+  @ExceptionHandler(AuthenticationException.class)
+  public ResponseEntity<Map<String, Object>> handleAuthenticationException(
+      AuthenticationException e) {
+    Map<String, Object> error = new HashMap<>();
+    error.put("message", "이메일 또는 비밀번호가 일치하지 않습니다.");
+    error.put("status", 422);
+    return ResponseEntity.status(422).body(error);
   }
 
   // 일반적인 서버 오류 처리

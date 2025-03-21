@@ -36,7 +36,8 @@ public class SecurityConfig {
                     .requestMatchers(
                         new AntPathRequestMatcher("/user"),
                         new AntPathRequestMatcher("/user/accountnamevalid"),
-                        new AntPathRequestMatcher("/user/emailvalid"))
+                        new AntPathRequestMatcher("/user/emailvalid"),
+                        new AntPathRequestMatcher("/user/login"))
                     .permitAll()
                     // 나머지 API는 인증 필요
                     .anyRequest()
