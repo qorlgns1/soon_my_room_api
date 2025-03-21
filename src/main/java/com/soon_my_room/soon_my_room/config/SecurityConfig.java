@@ -41,6 +41,9 @@ public class SecurityConfig {
                         new AntPathRequestMatcher("/swagger-resources/**"),
                         new AntPathRequestMatcher("/webjars/**"))
                     .permitAll()
+                    // 이미지 업로드 API 접근 허용
+                    .requestMatchers(new AntPathRequestMatcher("/image/**"))
+                    .permitAll()
                     // 회원가입 및 유효성 검증 API 접근 허용
                     .requestMatchers(
                         new AntPathRequestMatcher("/user"),
