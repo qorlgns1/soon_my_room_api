@@ -199,6 +199,7 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 서버 실행 후 다
 - `POST /user/accountnamevalid`: 계정명 유효성 검증
 - `POST /user/emailvalid`: 이메일 유효성 검증
 - `GET /user/checktoken`: 토큰 유효성 검증
+- `GET /user/searchuser`: 사용자 검색
 
 ### 프로필 및 팔로우 ✅
 
@@ -253,7 +254,7 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 서버 실행 후 다
     - Supabase Storage 연동
     - CORS 설정 및 환경별 프로필 구성
 
-2. **핵심 기능 개발**
+2. **핵심 기능 개발** ✅
     - 사용자 관리 API (회원가입, 로그인) ✅
     - 프로필 관리 API ✅
     - 팔로우/팔로잉 기능 ✅
@@ -262,6 +263,7 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 서버 실행 후 다
     - 좋아요 기능 ✅
     - 댓글 관련 API ✅
     - 상품 등록 및 관리 API ✅
+    - 사용자 검색 기능 ✅
 
 3. **테스트 및 문서화** 🚧
     - 단위 테스트 및 통합 테스트 작성
