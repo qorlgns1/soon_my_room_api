@@ -6,6 +6,14 @@
 - 기존 문서 스펙을 유지하면서 새로운 백엔드 서버 개발 진행 중
 - 현대적인 기술 스택으로 기존 서비스의 기능을 새롭게 구현하여 지속 가능한 백엔드 시스템 구축
 
+## 배포 정보
+
+🚀 **API 서버가 Railway에 배포되었습니다!**
+
+- **API 엔드포인트**: [https://soonmyroomapi-production.up.railway.app](https://soonmyroomapi-production.up.railway.app)
+- **API 문서 (Swagger UI)
+  **: [https://soonmyroomapi-production.up.railway.app/swagger-ui/index.html](https://soonmyroomapi-production.up.railway.app/swagger-ui/index.html)
+
 ## 기술 스택
 
 ### 백엔드 환경
@@ -16,6 +24,7 @@
 - **데이터베이스**: PostgreSQL (Supabase)
 - **파일 스토리지**: Supabase Storage (S3 호환 API)
 - **코드 스타일**: Google Java Format (Spotless 적용)
+- **배포 플랫폼**: Railway
 
 ### 주요 의존성
 
@@ -254,8 +263,10 @@ docker-compose -f docker-compose.prod.yml restart app  # 운영 환경
 
 ## API 문서
 
-SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 서버 실행 후 다음 URL에서 확인할 수 있습니다:
+SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 다음 URL에서 확인할 수 있습니다:
 
+- **배포된 Swagger UI
+  **: [https://soonmyroomapi-production.up.railway.app/swagger-ui/index.html](https://soonmyroomapi-production.up.railway.app/swagger-ui/index.html)
 - Swagger UI: `http://localhost:9000/swagger-ui/index.html`
 - OpenAPI JSON: `http://localhost:9000/v3/api-docs`
 
@@ -339,10 +350,10 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 서버 실행 후 다
     - API 문서화 완성 (Swagger) ✅
     - 개발 가이드 작성
 
-4. **배포 및 모니터링** 📅
+4. **배포 및 모니터링** ✅
     - Docker 컨테이너화 ✅
     - CI/CD 파이프라인 구축
-    - 클라우드 배포
+    - Railway 플랫폼을 통한 클라우드 배포 완료 ✅
     - 모니터링 및 로깅 설정
 
 ## 기여 방법
