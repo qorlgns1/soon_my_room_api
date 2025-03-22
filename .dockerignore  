@@ -1,0 +1,36 @@
+# 빌드 결과물
+build/
+out/
+*.jar
+
+# 그래들 캐시
+.gradle/
+
+# 개발 환경 파일
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.DS_Store
+
+# 로그 파일
+logs/
+*.log
+
+# 환경 설정 파일
+.env
+.env.*
+!.env.example
+
+# 문서 및 기타 메타데이터
+README.md
+LICENSE
+*.md
+
+# 깃 관련 파일
+.git/
+.gitignore
+
+# 테스트 파일
+**/test/

@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  app:
+    image: soon-my-room-api:dev-latest
+    container_name: soon-my-room-api-dev
+    ports:
+      - "9000:9000"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - DB_URL=${DB_URL}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SUPABASE_ENDPOINT=${SUPABASE_ENDPOINT}
+      - SUPABASE_REGION=${SUPABASE_REGION}
+      - SUPABASE_ACCESS_KEY=${SUPABASE_ACCESS_KEY}
+      - SUPABASE_SECRET_KEY=${SUPABASE_SECRET_KEY}
+      - SUPABASE_BUCKET_PROFILES=${SUPABASE_BUCKET_PROFILES:-user-profiles}
+      - SUPABASE_BUCKET_POSTS=${SUPABASE_BUCKET_POSTS:-post-images}
+      - SUPABASE_BUCKET_PRODUCTS=${SUPABASE_BUCKET_PRODUCTS:-product-images}
+      - SUPABASE_BUCKET_DEFAULT=${SUPABASE_BUCKET_DEFAULT:-default}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - soon-my-room-network
+
+networks:
+  soon-my-room-network:
+    driver: bridge
