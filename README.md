@@ -183,6 +183,75 @@ src/
 ./gradlew spotlessApply
 ```
 
+## Docker를 통한 배포
+
+### Docker 설정
+
+프로젝트는 Docker를 사용하여 쉽게 배포할 수 있습니다. 다음 Docker 관련 파일들이 포함되어 있습니다:
+
+- `Dockerfile`: 애플리케이션을 빌드하고 실행하기 위한 컨테이너 설정
+- `docker-compose.dev.yml`: 개발 환경용 Docker Compose 설정
+- `docker-compose.prod.yml`: 운영 환경용 Docker Compose 설정
+- `.dockerignore`: Docker 빌드 시 제외할 파일 목록
+- `script/docker-build.sh`: Docker 이미지 빌드 스크립트
+- `script/docker-deploy.sh`: Docker 컨테이너 배포 스크립트
+
+### Docker 이미지 빌드
+
+```bash
+# 스크립트에 실행 권한 부여
+chmod +x script/docker-build.sh
+
+# 개발 환경 이미지 빌드
+./script/docker-build.sh dev
+
+# 운영 환경 이미지 빌드
+./script/docker-build.sh prod
+```
+
+빌드된 이미지는 다음 태그를 가집니다:
+
+- 개발 환경: `soon-my-room-api:dev-latest`
+- 운영 환경: `soon-my-room-api:prod-latest`
+
+### Docker 컨테이너 배포
+
+```bash
+# 스크립트에 실행 권한 부여
+chmod +x script/docker-deploy.sh
+
+# 개발 환경 배포
+./script/docker-deploy.sh dev
+
+# 운영 환경 배포
+./script/docker-deploy.sh prod
+```
+
+### Docker 컨테이너 관리
+
+```bash
+# 컨테이너 로그 확인
+docker-compose -f docker-compose.dev.yml logs -f app  # 개발 환경
+docker-compose -f docker-compose.prod.yml logs -f app  # 운영 환경
+
+# 컨테이너 중지
+docker-compose -f docker-compose.dev.yml down  # 개발 환경
+docker-compose -f docker-compose.prod.yml down  # 운영 환경
+
+# 컨테이너 재시작
+docker-compose -f docker-compose.dev.yml restart app  # 개발 환경
+docker-compose -f docker-compose.prod.yml restart app  # 운영 환경
+```
+
+### Docker 환경 최적화
+
+운영 환경 Docker 구성은 다음과 같은 최적화가 포함되어 있습니다:
+
+- 리소스 제한 설정: CPU 및 메모리 제한으로 컨테이너 리소스 관리
+- 자동 재시작 정책: 서비스 중단 시 자동 복구
+- 다중 단계 빌드: 작은 실행 이미지 크기
+- 볼륨 마운트: 로깅을 위한 영구 저장소
+
 ## API 문서
 
 SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 서버 실행 후 다음 URL에서 확인할 수 있습니다:
@@ -271,7 +340,7 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 서버 실행 후 다
     - 개발 가이드 작성
 
 4. **배포 및 모니터링** 📅
-    - Docker 컨테이너화
+    - Docker 컨테이너화 ✅
     - CI/CD 파이프라인 구축
     - 클라우드 배포
     - 모니터링 및 로깅 설정
@@ -283,6 +352,21 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 서버 실행 후 다
 3. 변경사항 커밋 (`git commit -m 'Add some amazing feature'`)
 4. 브랜치에 푸시 (`git push origin feature/amazing-feature`)
 5. Pull Request 생성
+
+## 문제 해결
+
+### Docker 관련 문제 해결
+
+- **빌드 실패**: Spotless 스타일 검사가 실패하는 경우 `./gradlew spotlessApply` 명령으로 코드 스타일을 수정합니다.
+- **컨테이너 시작 실패**: `docker logs soon-my-room-api-dev` 명령으로 로그를 확인합니다.
+- **환경 변수 문제**: `docker-compose -f docker-compose.dev.yml config` 명령으로 환경 변수 설정을 확인합니다.
+- **데이터베이스 연결 오류**: 데이터베이스 연결 정보를 확인하고 Supabase 프로젝트 설정을 확인합니다.
+
+### 일반적인 문제 해결
+
+- **빌드 오류**: Gradle 버전(8.x 이상) 및 JDK 버전(21 이상)을 확인합니다.
+- **실행 오류**: 필요한 환경 변수가 모두 설정되어 있는지 확인합니다.
+- **API 오류**: Swagger UI를 통해 API 스펙을 확인하고 올바른 요청 형식을 사용하고 있는지 검증합니다.
 
 ## 라이센스
 
