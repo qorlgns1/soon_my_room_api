@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -122,5 +124,22 @@ public class UserController {
 
     AuthResponseDTO.TokenValidResponse response = authService.validateToken(token);
     return ResponseEntity.ok(response);
+  }
+
+  @Operation(
+      summary = "사용자 검색",
+      description = "키워드로 사용자를 검색합니다. 이름(username)이나 계정명(accountname)에 검색어가 포함된 사용자를 찾습니다.",
+      security = {@SecurityRequirement(name = "bearerAuth")})
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "검색 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 실패")
+      })
+  @GetMapping("/searchuser")
+  public ResponseEntity<List<UserResponseDTO.SearchUserResponse>> searchUsers(
+      @Parameter(description = "검색 키워드", required = true) @RequestParam String keyword) {
+
+    List<UserResponseDTO.SearchUserResponse> searchResults = userService.searchUsers(keyword);
+    return ResponseEntity.ok(searchResults);
   }
 }

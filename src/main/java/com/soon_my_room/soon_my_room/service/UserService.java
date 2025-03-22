@@ -8,6 +8,7 @@ import com.soon_my_room.soon_my_room.exception.ResourceNotFoundException;
 import com.soon_my_room.soon_my_room.model.User;
 import com.soon_my_room.soon_my_room.repository.FollowRepository;
 import com.soon_my_room.soon_my_room.repository.UserRepository;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -139,5 +140,37 @@ public class UserService {
             followers.size());
 
     return ProfileDTO.ProfileResponse.builder().profile(profile).build();
+  }
+
+  /** 사용자 검색 */
+  @Transactional(readOnly = true)
+  public List<UserResponseDTO.SearchUserResponse> searchUsers(String keyword) {
+    List<User> users = userRepository.findByUsernameContainingOrAccountnameContaining(keyword);
+
+    return users.stream()
+        .map(
+            user -> {
+              // 팔로워/팔로잉 정보 조회
+              List<String> following =
+                  followRepository.findByFollowerId(user.getId()).stream()
+                      .map(follow -> follow.getFollowingId())
+                      .collect(Collectors.toList());
+
+              List<String> followers =
+                  followRepository.findByFollowingId(user.getId()).stream()
+                      .map(follow -> follow.getFollowerId())
+                      .collect(Collectors.toList());
+
+              return UserResponseDTO.SearchUserResponse.builder()
+                  ._id(user.getId())
+                  .username(user.getUsername())
+                  .accountname(user.getAccountname())
+                  .following(following)
+                  .follower(followers)
+                  .followerCount(followers.size())
+                  .followingCount(following.size())
+                  .build();
+            })
+        .collect(Collectors.toList());
   }
 }

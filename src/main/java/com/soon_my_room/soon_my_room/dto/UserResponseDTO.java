@@ -1,6 +1,7 @@
 package com.soon_my_room.soon_my_room.dto;
 
 import com.soon_my_room.soon_my_room.model.User;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -58,5 +59,19 @@ public class UserResponseDTO {
   @AllArgsConstructor
   public static class EmailValidResponse {
     private String message;
+  }
+
+  @Data
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public static class SearchUserResponse {
+    private String _id;
+    private String username;
+    private String accountname;
+    private List<String> following;
+    private List<String> follower;
+    private int followerCount;
+    private int followingCount;
   }
 }
