@@ -8,7 +8,6 @@ import com.soon_my_room.soon_my_room.exception.ResourceNotFoundException;
 import com.soon_my_room.soon_my_room.model.User;
 import com.soon_my_room.soon_my_room.repository.FollowRepository;
 import com.soon_my_room.soon_my_room.repository.UserRepository;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
