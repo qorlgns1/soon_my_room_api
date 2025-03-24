@@ -4,7 +4,7 @@
 
 - 금방내방(Soon My Room) 서비스의 백엔드 서버가 중단되어 기능 동작이 불가능한 상태
 - 기존 문서 스펙을 유지하면서 새로운 백엔드 서버 개발 진행 중
-- 현대적인 기술 스택으로 기존 서비스의 기능을 새롭게 구현하여 지속 가능한 백엔드 시스템 구축
+- 현대적인 기술 스택과 AWS 클라우드 인프라를 활용한 확장 가능하고 유지보수가 용이한 백엔드 시스템
 
 ## 배포 정보
 
@@ -21,10 +21,20 @@
 - **Java**: JDK 21
 - **프레임워크**: Spring Boot 3.4.3
 - **빌드 도구**: Gradle 8.13
-- **데이터베이스**: PostgreSQL (Supabase)
-- **파일 스토리지**: Supabase Storage (S3 호환 API)
+- **데이터베이스**: AWS RDS PostgreSQL
+- **파일 스토리지**: AWS S3
 - **코드 스타일**: Google Java Format (Spotless 적용)
+- **컨테이너화**: Docker
 - **배포 플랫폼**: Railway
+
+### AWS 인프라
+
+- **AWS RDS**: PostgreSQL 데이터베이스 호스팅
+- **AWS S3**: 이미지 파일 저장 및 관리
+    - 프로필 이미지 버킷
+    - 게시글 이미지 버킷
+    - 상품 이미지 버킷
+    - 기본 이미지 버킷
 
 ### 주요 의존성
 
@@ -32,11 +42,11 @@
 - **Spring Boot Starter Data JPA**: 데이터 액세스 계층
 - **Spring Boot Starter Security**: 인증 및 권한 관리
 - **Spring Boot Starter Validation**: 데이터 유효성 검증
-- **AWS S3 SDK**: Supabase Storage와 S3 호환 API 연동
+- **AWS S3 SDK**: AWS S3와 연동하여 이미지 파일 관리
 - **JWT**: 사용자 인증 토큰 관리 (jjwt 0.12.6)
 - **SpringDoc OpenAPI**: API 문서화 (Swagger UI)
 - **Lombok**: 반복 코드 제거
-- **PostgreSQL**: 관계형 데이터베이스
+- **PostgreSQL**: AWS RDS PostgreSQL 연결 드라이버
 
 ## 데이터베이스 구조
 
@@ -132,8 +142,31 @@ src/
 
 - JDK 21 이상
 - Gradle 8.x 이상
-- PostgreSQL 데이터베이스
-- Supabase 프로젝트 (DB 및 Storage)
+- AWS 계정 및 필요한 서비스 접근 권한
+    - AWS RDS PostgreSQL 인스턴스
+    - AWS S3 버킷 및 접근 키
+
+### AWS 설정
+
+#### AWS RDS 설정
+
+1. AWS Management Console에서 RDS 서비스 접속
+2. PostgreSQL 데이터베이스 인스턴스 생성
+3. 보안 그룹 설정으로 적절한 인바운드 규칙 구성
+4. 데이터베이스 연결 정보(엔드포인트, 사용자 이름, 비밀번호) 확보
+
+#### AWS S3 설정
+
+1. AWS Management Console에서 S3 서비스 접속
+2. 다음 버킷 생성:
+    - 프로필 이미지용 버킷 (예: `soon-my-room-profiles`)
+    - 게시글 이미지용 버킷 (예: `soon-my-room-posts`)
+    - 상품 이미지용 버킷 (예: `soon-my-room-products`)
+    - 기본 이미지용 버킷 (예: `soon-my-room-default`)
+3. 각 버킷에 대한 적절한 접근 정책 설정
+4. CORS 설정 구성
+5. IAM 사용자 생성 및 S3 접근 권한 부여
+6. 접근 키(Access Key)와 비밀 키(Secret Key) 발급
 
 ### 환경 설정
 
@@ -144,38 +177,37 @@ src/
    ```
 
 2. 환경 변수 설정:
-   `.env` 파일을 생성하고 다음 변수들을 설정합니다:
+   `.env` 파일을 생성하고 다음 변수들을 설정합니다 (`.env.example` 참조):
    ```
    JWT_SECRET=your_jwt_secret_here
    JWT_EXPIRATION=86400000
-   DB_URL=jdbc:postgresql://your_db_host:5432/your_db_name
+   
+   # AWS RDS 설정
+   DB_URL=jdbc:postgresql://your-rds-instance.rds.amazonaws.com:5432/your_db_name
    DB_USERNAME=your_db_username
    DB_PASSWORD=your_db_password
-   SUPABASE_ENDPOINT=https://your-project-id.supabase.co/storage/v1
-   SUPABASE_REGION=your-supabase-region
-   SUPABASE_ACCESS_KEY=your-supabase-access-key
-   SUPABASE_SECRET_KEY=your-supabase-secret-key
-   SUPABASE_BUCKET_PROFILES=user-profiles
-   SUPABASE_BUCKET_POSTS=post-images
-   SUPABASE_BUCKET_PRODUCTS=product-images
-   SUPABASE_BUCKET_DEFAULT=default
+   
+   # AWS S3 설정
+   AWS_S3_REGION=ap-northeast-2
+   AWS_S3_ACCESS_KEY=your_aws_access_key
+   AWS_S3_SECRET_KEY=your_aws_secret_key
+   AWS_S3_BUCKET_PROFILES=soon-my-room-profiles
+   AWS_S3_BUCKET_POSTS=soon-my-room-posts
+   AWS_S3_BUCKET_PRODUCTS=soon-my-room-products
+   AWS_S3_BUCKET_DEFAULT=soon-my-room-default
+   
+   # CORS 설정
    CORS_ALLOWED_ORIGINS=http://localhost:3000,https://soon-my-room.com
    ```
-
-### Supabase 설정
-
-1. Supabase 프로젝트 생성
-2. 데이터베이스 연결 정보 획득
-3. Storage 설정:
-    - `user-profiles`, `post-images`, `product-images`, `default` 버킷 생성
-    - 버킷 권한 설정 (RLS 정책 구성)
-    - API 키 획득 (access key & secret key)
 
 ### 빌드 및 실행
 
 ```bash
 # 프로젝트 빌드
 ./gradlew build
+
+# 코드 스타일 적용
+./gradlew spotlessApply
 
 # 서버 실행 (개발 환경)
 ./gradlew bootRun --args='--spring.profiles.active=dev'
@@ -185,12 +217,6 @@ src/
 ```
 
 기본적으로 서버는 `http://localhost:9000`에서 실행됩니다.
-
-### 코드 스타일 적용
-
-```bash
-./gradlew spotlessApply
-```
 
 ## Docker를 통한 배포
 
@@ -236,39 +262,14 @@ chmod +x script/docker-deploy.sh
 ./script/docker-deploy.sh prod
 ```
 
-### Docker 컨테이너 관리
-
-```bash
-# 컨테이너 로그 확인
-docker-compose -f docker-compose.dev.yml logs -f app  # 개발 환경
-docker-compose -f docker-compose.prod.yml logs -f app  # 운영 환경
-
-# 컨테이너 중지
-docker-compose -f docker-compose.dev.yml down  # 개발 환경
-docker-compose -f docker-compose.prod.yml down  # 운영 환경
-
-# 컨테이너 재시작
-docker-compose -f docker-compose.dev.yml restart app  # 개발 환경
-docker-compose -f docker-compose.prod.yml restart app  # 운영 환경
-```
-
-### Docker 환경 최적화
-
-운영 환경 Docker 구성은 다음과 같은 최적화가 포함되어 있습니다:
-
-- 리소스 제한 설정: CPU 및 메모리 제한으로 컨테이너 리소스 관리
-- 자동 재시작 정책: 서비스 중단 시 자동 복구
-- 다중 단계 빌드: 작은 실행 이미지 크기
-- 볼륨 마운트: 로깅을 위한 영구 저장소
-
 ## API 문서
 
 SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 다음 URL에서 확인할 수 있습니다:
 
 - **배포된 Swagger UI
   **: [https://soonmyroomapi-production.up.railway.app/swagger-ui/index.html](https://soonmyroomapi-production.up.railway.app/swagger-ui/index.html)
-- Swagger UI: `http://localhost:9000/swagger-ui/index.html`
-- OpenAPI JSON: `http://localhost:9000/v3/api-docs`
+- **로컬 개발 환경 Swagger UI**: `http://localhost:9000/swagger-ui/index.html`
+- **OpenAPI JSON**: `http://localhost:9000/v3/api-docs`
 
 ## 주요 API 엔드포인트
 
@@ -329,9 +330,9 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 다음 URL에서 확�
 
 1. **기초 설정** ✅
     - 프로젝트 구조 설정 및 의존성 관리
-    - 데이터베이스 연결 및 JPA 설정
+    - AWS RDS 데이터베이스 연결 및 JPA 설정
     - Spring Security 및 JWT 인증 구현
-    - Supabase Storage 연동
+    - AWS S3 연동 및 이미지 관리 서비스 구현
     - CORS 설정 및 환경별 프로필 구성
 
 2. **핵심 기능 개발** ✅
@@ -356,22 +357,19 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 다음 URL에서 확�
     - Railway 플랫폼을 통한 클라우드 배포 완료 ✅
     - 모니터링 및 로깅 설정
 
-## 기여 방법
-
-1. 프로젝트 포크
-2. 기능 브랜치 생성 (`git checkout -b feature/amazing-feature`)
-3. 변경사항 커밋 (`git commit -m 'Add some amazing feature'`)
-4. 브랜치에 푸시 (`git push origin feature/amazing-feature`)
-5. Pull Request 생성
-
 ## 문제 해결
+
+### AWS 관련 문제 해결
+
+- **RDS 연결 오류**: 보안 그룹 설정을 확인하고, 적절한 인바운드 규칙이 구성되어 있는지 확인합니다.
+- **S3 접근 오류**: IAM 권한 및 버킷 정책을 확인합니다. 접근 키와 비밀 키가 올바르게 설정되어 있는지 확인합니다.
+- **S3 CORS 오류**: S3 버킷의 CORS 설정을 확인하고, 프론트엔드 도메인이 허용 목록에 있는지 확인합니다.
 
 ### Docker 관련 문제 해결
 
 - **빌드 실패**: Spotless 스타일 검사가 실패하는 경우 `./gradlew spotlessApply` 명령으로 코드 스타일을 수정합니다.
 - **컨테이너 시작 실패**: `docker logs soon-my-room-api-dev` 명령으로 로그를 확인합니다.
 - **환경 변수 문제**: `docker-compose -f docker-compose.dev.yml config` 명령으로 환경 변수 설정을 확인합니다.
-- **데이터베이스 연결 오류**: 데이터베이스 연결 정보를 확인하고 Supabase 프로젝트 설정을 확인합니다.
 
 ### 일반적인 문제 해결
 
