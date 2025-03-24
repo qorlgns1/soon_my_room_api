@@ -27,20 +27,17 @@ public class S3StorageService {
   private final S3Client s3Client;
   private final S3Presigner s3Presigner;
 
-  @Value("${supabase.bucket.profiles}")
+  @Value("${aws.s3.bucket.profiles}")
   private String profilesBucket;
 
-  @Value("${supabase.bucket.posts}")
+  @Value("${aws.s3.bucket.posts}")
   private String postsBucket;
 
-  @Value("${supabase.bucket.products}")
+  @Value("${aws.s3.bucket.products}")
   private String productsBucket;
 
-  @Value("${supabase.bucket.default}")
+  @Value("${aws.s3.bucket.default}")
   private String defaultBucket;
-
-  @Value("${supabase.endpoint}")
-  private String endpoint;
 
   // 허용된 이미지 확장자
   private final List<String> ALLOWED_EXTENSIONS =
@@ -206,18 +203,8 @@ public class S3StorageService {
    */
   private ImageResponseDTO createSuccessResponse(
       MultipartFile file, String key, String contentType, String bucketName) {
-    // 30일 동안 유효한 서명된 URL 생성
-    GetObjectRequest getObjectRequest =
-        GetObjectRequest.builder().bucket(bucketName).key(key).build();
-
-    // 7일 최대 허용 기간
-    GetObjectPresignRequest presignRequest =
-        GetObjectPresignRequest.builder()
-            .signatureDuration(Duration.ofDays(7))
-            .getObjectRequest(getObjectRequest)
-            .build();
-
-    String presignedUrl = s3Presigner.presignGetObject(presignRequest).url().toString();
+    // 7일 동안 유효한 서명된 URL 생성
+    String presignedUrl = generatePresignedUrl(key, bucketName);
 
     return ImageResponseDTO.builder()
         .fieldname("image")
