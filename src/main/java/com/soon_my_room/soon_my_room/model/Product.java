@@ -35,11 +35,11 @@ public class Product {
   private int price;
 
   @NotBlank
-  @Column(nullable = false)
+  @Column(nullable = false, columnDefinition = "TEXT")
   private String link;
 
   @NotBlank
-  @Column(nullable = false)
+  @Column(nullable = false, columnDefinition = "TEXT")
   private String itemImage;
 
   @ManyToOne(fetch = FetchType.LAZY)

@@ -36,16 +36,17 @@ public class User {
   private String email;
 
   @NotBlank
-  @Column(nullable = false)
+  @Column(nullable = false, columnDefinition = "TEXT")
   private String password;
 
   @NotBlank
   @Column(nullable = false, unique = true)
   private String accountname;
 
-  @Column(columnDefinition = "TEXT")
+  @Column(nullable = false, columnDefinition = "TEXT")
   private String intro;
 
+  @Column(nullable = false, columnDefinition = "TEXT")
   private String image;
 
   @Column(nullable = false)

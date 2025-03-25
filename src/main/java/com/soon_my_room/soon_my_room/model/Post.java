@@ -27,6 +27,7 @@ public class Post {
   @Column(columnDefinition = "TEXT")
   private String content;
 
+  @Column(nullable = false, columnDefinition = "TEXT")
   private String image;
 
   @ManyToOne(fetch = FetchType.LAZY)
