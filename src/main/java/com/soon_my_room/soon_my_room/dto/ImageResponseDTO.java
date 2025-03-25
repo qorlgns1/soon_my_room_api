@@ -18,6 +18,7 @@ public class ImageResponseDTO {
   private String filename;
   private String path;
   private String publicUrl; // 이미지 접근 URL
+  private String imageSrc; // 이미지 접근 URL
   private String bucketName; // 버킷 이름
   private long size;
   private String error; // 에러 메시지

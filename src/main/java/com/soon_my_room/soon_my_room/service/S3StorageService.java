@@ -216,6 +216,7 @@ public class S3StorageService {
         .filename(key)
         .path(bucketName + "/" + key)
         .publicUrl(presignedUrl)
+        .imageSrc(presignedUrl)
         .size(file.getSize())
         .build();
   }
