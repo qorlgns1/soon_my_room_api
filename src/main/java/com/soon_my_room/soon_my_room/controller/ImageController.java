@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/image")
+@RequestMapping("/api/image")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Image", description = "이미지 업로드 관련 API")

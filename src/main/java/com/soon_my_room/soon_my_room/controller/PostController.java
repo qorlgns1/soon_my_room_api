@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/post")
+@RequestMapping("/api/post")
 @RequiredArgsConstructor
 @Tag(name = "Post", description = "게시글 관련 API")
 public class PostController {

@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/post")
+@RequestMapping("/api/post")
 @RequiredArgsConstructor
 @Tag(name = "Heart", description = "좋아요 관련 API")
 public class HeartController {
