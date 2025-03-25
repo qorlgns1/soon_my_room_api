@@ -65,16 +65,16 @@ public class SecurityConfig {
                         new AntPathRequestMatcher("/webjars/**"))
                     .permitAll()
                     // 이미지 업로드 API 접근 허용
-                    .requestMatchers(new AntPathRequestMatcher("/image/**"))
+                    .requestMatchers(new AntPathRequestMatcher("/api/image/**"))
                     .permitAll()
                     // 회원가입 및 유효성 검증 API 접근 허용
                     .requestMatchers(
-                        new AntPathRequestMatcher("/user"),
-                        new AntPathRequestMatcher("/user/accountnamevalid"),
-                        new AntPathRequestMatcher("/user/emailvalid"),
-                        new AntPathRequestMatcher("/user/login"),
-                        new AntPathRequestMatcher("/user/checktoken"),
-                        new AntPathRequestMatcher("/post/**"))
+                        new AntPathRequestMatcher("/api/user"),
+                        new AntPathRequestMatcher("/api/user/accountnamevalid"),
+                        new AntPathRequestMatcher("/api/user/emailvalid"),
+                        new AntPathRequestMatcher("/api/user/login"),
+                        new AntPathRequestMatcher("/api/user/checktoken"),
+                        new AntPathRequestMatcher("/api/post/**"))
                     .permitAll()
                     // 나머지 API는 인증 필요
                     .anyRequest()
