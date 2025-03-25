@@ -195,9 +195,6 @@ src/
    AWS_S3_BUCKET_POSTS=soon-my-room-posts
    AWS_S3_BUCKET_PRODUCTS=soon-my-room-products
    AWS_S3_BUCKET_DEFAULT=soon-my-room-default
-   
-   # CORS 설정
-   CORS_ALLOWED_ORIGINS=http://localhost:3000,https://soon-my-room.com
    ```
 
 ### 빌드 및 실행
