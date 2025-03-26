@@ -5,14 +5,15 @@
 - 금방내방(Soon My Room) 서비스의 백엔드 서버가 중단되어 기능 동작이 불가능한 상태
 - 기존 문서 스펙을 유지하면서 새로운 백엔드 서버 개발 진행 중
 - 현대적인 기술 스택과 AWS 클라우드 인프라를 활용한 확장 가능하고 유지보수가 용이한 백엔드 시스템
+- 사용자 관리, 게시글, 댓글, 좋아요, 팔로우 및 상품 관리 기능 제공
 
 ## 배포 정보
 
-🚀 **API 서버가 Railway에 배포되었습니다!**
+🚀 **API 서버가 배포되었습니다!**
 
-- **API 엔드포인트**: [https://soonmyroomapi-production.up.railway.app](https://soonmyroomapi-production.up.railway.app)
+- **API 엔드포인트**: [https://soon-my-room.kihoonbae.store/api](https://soon-my-room.kihoonbae.store/api)
 - **API 문서 (Swagger UI)
-  **: [https://soonmyroomapi-production.up.railway.app/swagger-ui/index.html](https://soonmyroomapi-production.up.railway.app/swagger-ui/index.html)
+  **: [https://soon-my-room.kihoonbae.store/swagger-ui/index.html](https://soon-my-room.kihoonbae.store/swagger-ui/index.html)
 
 ## 기술 스택
 
@@ -25,16 +26,24 @@
 - **파일 스토리지**: AWS S3
 - **코드 스타일**: Google Java Format (Spotless 적용)
 - **컨테이너화**: Docker
-- **배포 플랫폼**: Railway
+- **인증**: JWT
 
 ### AWS 인프라
 
-- **AWS RDS**: PostgreSQL 데이터베이스 호스팅
-- **AWS S3**: 이미지 파일 저장 및 관리
+- **EC2**: 애플리케이션 호스팅
+- **RDS**: PostgreSQL 데이터베이스 호스팅
+- **S3**: 이미지 파일 저장 및 관리
     - 프로필 이미지 버킷
     - 게시글 이미지 버킷
     - 상품 이미지 버킷
     - 기본 이미지 버킷
+
+### CI/CD 및 배포 환경
+
+- **GitHub Actions**: CI/CD 파이프라인
+- **Docker Hub**: 컨테이너 이미지 저장소
+- **Nginx**: 리버스 프록시 및 SSL 종료
+- **Blue-Green 배포**: 무중단 배포 전략
 
 ### 주요 의존성
 
@@ -47,6 +56,26 @@
 - **SpringDoc OpenAPI**: API 문서화 (Swagger UI)
 - **Lombok**: 반복 코드 제거
 - **PostgreSQL**: AWS RDS PostgreSQL 연결 드라이버
+
+## 인프라 아키텍처
+
+현재 인프라 구성은 다음과 같습니다:
+
+1. **GitHub Actions 워크플로우**:
+    * 코드 변경 시 자동 빌드 및 테스트
+    * Docker 이미지 빌드 및 Docker Hub 푸시
+    * SSH를 통한 EC2 서버 배포
+
+2. **EC2 서버**:
+    * Docker 컨테이너 실행
+    * Nginx 리버스 프록시 (SSL 처리 및 라우팅)
+    * Blue-Green 배포를 위한 배포 스크립트
+
+3. **Blue-Green 배포**:
+    * Blue 환경: 포트 9000
+    * Green 환경: 포트 9001
+    * Nginx 설정을 통한 트래픽 전환
+    * 롤백 기능 지원
 
 ## 데이터베이스 구조
 
@@ -136,44 +165,23 @@ src/
 └── test/                     # 테스트 코드
 ```
 
-## 설치 및 실행 방법
+## 개발 환경 설정
 
 ### 선행 조건
 
 - JDK 21 이상
 - Gradle 8.x 이상
+- Docker 및 Docker Compose
 - AWS 계정 및 필요한 서비스 접근 권한
     - AWS RDS PostgreSQL 인스턴스
     - AWS S3 버킷 및 접근 키
 
-### AWS 설정
-
-#### AWS RDS 설정
-
-1. AWS Management Console에서 RDS 서비스 접속
-2. PostgreSQL 데이터베이스 인스턴스 생성
-3. 보안 그룹 설정으로 적절한 인바운드 규칙 구성
-4. 데이터베이스 연결 정보(엔드포인트, 사용자 이름, 비밀번호) 확보
-
-#### AWS S3 설정
-
-1. AWS Management Console에서 S3 서비스 접속
-2. 다음 버킷 생성:
-    - 프로필 이미지용 버킷 (예: `soon-my-room-profiles`)
-    - 게시글 이미지용 버킷 (예: `soon-my-room-posts`)
-    - 상품 이미지용 버킷 (예: `soon-my-room-products`)
-    - 기본 이미지용 버킷 (예: `soon-my-room-default`)
-3. 각 버킷에 대한 적절한 접근 정책 설정
-4. CORS 설정 구성
-5. IAM 사용자 생성 및 S3 접근 권한 부여
-6. 접근 키(Access Key)와 비밀 키(Secret Key) 발급
-
-### 환경 설정
+### 로컬 개발 환경 설정
 
 1. 프로젝트 클론:
    ```bash
-   git clone https://github.com/soon-my-room/soon_my_room_backend.git
-   cd soon_my_room_backend
+   git clone https://github.com/soon-my-room/soon_my_room_api.git
+   cd soon_my_room_api
    ```
 
 2. 환경 변수 설정:
@@ -214,6 +222,25 @@ src/
 ```
 
 기본적으로 서버는 `http://localhost:9000`에서 실행됩니다.
+
+## 배포 프로세스
+
+현재 배포 프로세스는 다음과 같습니다:
+
+1. `main` 브랜치에 코드가 푸시되면 GitHub Actions 워크플로우 실행
+2. 코드 빌드, 테스트 및 Docker 이미지 생성
+3. Docker 이미지를 Docker Hub에 푸시
+4. SSH를 통해 EC2 서버에 접속하여 배포 스크립트 실행
+5. Blue/Green 환경 중 비활성 환경에 새 버전 배포
+6. 헬스 체크 수행
+7. Nginx 설정 업데이트를 통해 트래픽 전환
+
+### 인프라 스크립트
+
+배포와 롤백을 위한 스크립트는 EC2 서버의 다음 위치에 있습니다:
+
+* 배포 스크립트: `/home/ubuntu/workspace/soon_my_room_deploy/soon_my_room_api_deploy.sh`
+* 롤백 스크립트: `/home/ubuntu/workspace/soon_my_room_deploy/soon_my_room_api_rollback.sh`
 
 ## Docker를 통한 배포
 
@@ -264,7 +291,7 @@ chmod +x script/docker-deploy.sh
 SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 다음 URL에서 확인할 수 있습니다:
 
 - **배포된 Swagger UI
-  **: [https://soonmyroomapi-production.up.railway.app/swagger-ui/index.html](https://soonmyroomapi-production.up.railway.app/swagger-ui/index.html)
+  **: [https://soon-my-room.kihoonbae.store/swagger-ui/index.html](https://soon-my-room.kihoonbae.store/swagger-ui/index.html)
 - **로컬 개발 환경 Swagger UI**: `http://localhost:9000/swagger-ui/index.html`
 - **OpenAPI JSON**: `http://localhost:9000/v3/api-docs`
 
@@ -350,9 +377,10 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 다음 URL에서 확�
 
 4. **배포 및 모니터링** ✅
     - Docker 컨테이너화 ✅
-    - CI/CD 파이프라인 구축
-    - Railway 플랫폼을 통한 클라우드 배포 완료 ✅
-    - 모니터링 및 로깅 설정
+    - CI/CD 파이프라인 구축 ✅
+    - EC2를 통한 클라우드 배포 완료 ✅
+    - Blue-Green 배포 전략 구현 ✅
+    - 모니터링 및 로깅 설정 ✅
 
 ## 문제 해결
 
