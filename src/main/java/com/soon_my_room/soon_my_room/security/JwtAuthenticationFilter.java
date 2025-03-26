@@ -49,12 +49,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
               }
             });
 
-    try {
-      filterChain.doFilter(request, response);
-    } finally {
-      log.info("=== 응답 완료: {} {} - 상태: {} ===", method, requestURI, response.getStatus());
-    }
-
+    // JWT 검증 로직
     String email = null;
     String jwt = null;
 
@@ -79,6 +74,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       }
     }
 
-    filterChain.doFilter(request, response);
+    try {
+      filterChain.doFilter(request, response);
+    } finally {
+      log.info("=== 응답 완료: {} {} - 상태: {} ===", method, requestURI, response.getStatus());
+    }
   }
 }
