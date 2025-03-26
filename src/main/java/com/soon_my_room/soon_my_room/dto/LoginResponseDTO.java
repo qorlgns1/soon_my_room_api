@@ -18,7 +18,7 @@ public class LoginResponseDTO {
   @NoArgsConstructor
   @AllArgsConstructor
   public static class UserData {
-    private String _id;
+    private String id;
     private String username;
     private String email;
     private String accountname;
@@ -30,7 +30,7 @@ public class LoginResponseDTO {
   public static LoginResponseDTO fromEntity(User user, String token) {
     UserData userData =
         UserData.builder()
-            ._id(user.getId())
+            .id(user.getId())
             .username(user.getUsername())
             .email(user.getEmail())
             .accountname(user.getAccountname())

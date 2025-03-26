@@ -22,7 +22,7 @@ public class UserResponseDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class UserData {
-      private String _id;
+      private String id;
       private String username;
       private String email;
       private String accountname;
@@ -33,7 +33,7 @@ public class UserResponseDTO {
     public static RegisterResponse fromEntity(User user) {
       UserData userData =
           UserData.builder()
-              ._id(user.getId())
+              .id(user.getId())
               .username(user.getUsername())
               .email(user.getEmail())
               .accountname(user.getAccountname())
@@ -66,7 +66,7 @@ public class UserResponseDTO {
   @NoArgsConstructor
   @AllArgsConstructor
   public static class SearchUserResponse {
-    private String _id;
+    private String id;
     private String username;
     private String accountname;
     private List<String> following;

@@ -22,7 +22,7 @@ public class ProfileDTO {
   @NoArgsConstructor
   @AllArgsConstructor
   public static class Profile {
-    private String _id;
+    private String id;
     private String username;
     private String accountname;
     private String intro;
@@ -41,7 +41,7 @@ public class ProfileDTO {
         int followingCount,
         int followerCount) {
       return Profile.builder()
-          ._id(user.getId())
+          .id(user.getId())
           .username(user.getUsername())
           .accountname(user.getAccountname())
           .intro(user.getIntro())

@@ -161,7 +161,7 @@ public class UserService {
                       .collect(Collectors.toList());
 
               return UserResponseDTO.SearchUserResponse.builder()
-                  ._id(user.getId())
+                  .id(user.getId())
                   .username(user.getUsername())
                   .accountname(user.getAccountname())
                   .following(following)
