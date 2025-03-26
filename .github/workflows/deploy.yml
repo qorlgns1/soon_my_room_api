@@ -13,21 +13,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # 디버깅: 시크릿 존재 여부 확인
-      - name: Check if secrets exist
-        run: |
-          if [ -n "${{ secrets.DOCKER_HUB_USERNAME }}" ]; then
-          echo "DOCKER_HUB_USERNAME exists"
-          else
-          echo "DOCKER_HUB_USERNAME is empty or not set"
-          fi
-          
-          if [ -n "${{ secrets.DOCKER_HUB_TOKEN }}" ]; then
-          echo "DOCKER_HUB_TOKEN exists (value is hidden)"
-          else
-          echo "DOCKER_HUB_TOKEN is empty or not set"
-          fi
-
       - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
