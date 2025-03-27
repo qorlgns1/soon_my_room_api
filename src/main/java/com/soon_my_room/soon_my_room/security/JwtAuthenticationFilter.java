@@ -141,8 +141,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     String path = request.getRequestURI();
 
     // 인증이 필요없는 경로 목록
-    return !(path.startsWith("/swagger-ui/")
-        || path.startsWith("/v3/api-docs/")
+    return !(path.startsWith("/swagger-ui")
+        || path.startsWith("/v3/api-docs")
         || path.startsWith("/api/image/")
         || path.startsWith("/api/user")
         || path.equals("/api/user/accountnamevalid")
