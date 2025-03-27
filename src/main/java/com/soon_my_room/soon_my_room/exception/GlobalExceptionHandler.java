@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -57,11 +58,42 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(422).body(error);
   }
 
+  // 접근 권한 예외 처리 (추가됨)
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<Map<String, Object>> handleAccessDeniedException(AccessDeniedException e) {
+    Map<String, Object> error = new HashMap<>();
+    error.put(
+        "message",
+        e.getMessage() != null && !e.getMessage().isEmpty()
+            ? e.getMessage()
+            : "이 작업을 수행할 권한이 없습니다. 로그인 정보를 확인하세요.");
+    error.put("status", HttpStatus.FORBIDDEN.value());
+    error.put("error", "Forbidden");
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+  }
+
+  // JWT 토큰 예외 처리 (추가됨)
+  @ExceptionHandler(JwtAuthenticationException.class)
+  public ResponseEntity<Map<String, Object>> handleJwtAuthenticationException(
+      JwtAuthenticationException e) {
+    Map<String, Object> error = new HashMap<>();
+    error.put("message", e.getMessage());
+    error.put("errorType", e.getErrorType().name());
+    error.put("status", HttpStatus.FORBIDDEN.value());
+    error.put("error", "Forbidden");
+
+    if (e.getDetails() != null) {
+      error.put("details", e.getDetails());
+    }
+
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+  }
+
   // 일반적인 서버 오류 처리
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Map<String, String>> handleGeneralException(Exception e) {
     Map<String, String> error = new HashMap<>();
-    error.put("error", "서버 오류가 발생했습니다.");
+    error.put("error", "서버 오류가 발생했습니다: " + e.getMessage());
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
   }
 }
