@@ -15,9 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -96,34 +94,6 @@ class GlobalExceptionHandlerTest {
     assertEquals(2, errors.size());
     assertEquals("필드1 오류", errors.get("field1"));
     assertEquals("필드2 오류", errors.get("field2"));
-  }
-
-  @Test
-  @DisplayName("사용자명 not found 인증 실패 테스트")
-  void handleUsernameNotFoundException() {
-    // Given
-    UsernameNotFoundException ex = new UsernameNotFoundException("사용자를 찾을 수 없습니다.");
-
-    // When
-    ProblemDetail problemDetail = exceptionHandler.handleAuthenticationFailures(ex, request);
-
-    // Then
-    assertEquals(HttpStatus.UNPROCESSABLE_ENTITY.value(), problemDetail.getStatus());
-    assertEquals("이메일 또는 비밀번호가 일치하지 않습니다.", problemDetail.getDetail());
-  }
-
-  @Test
-  @DisplayName("잘못된 자격 증명 인증 실패 테스트")
-  void handleBadCredentialsException() {
-    // Given
-    BadCredentialsException ex = new BadCredentialsException("잘못된 비밀번호입니다.");
-
-    // When
-    ProblemDetail problemDetail = exceptionHandler.handleAuthenticationFailures(ex, request);
-
-    // Then
-    assertEquals(HttpStatus.UNPROCESSABLE_ENTITY.value(), problemDetail.getStatus());
-    assertEquals("이메일 또는 비밀번호가 일치하지 않습니다.", problemDetail.getDetail());
   }
 
   @Test

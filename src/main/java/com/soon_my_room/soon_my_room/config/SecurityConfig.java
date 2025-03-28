@@ -1,6 +1,7 @@
 package com.soon_my_room.soon_my_room.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.soon_my_room.soon_my_room.security.CustomUserDetailsService;
 import com.soon_my_room.soon_my_room.security.JwtAuthenticationFilter;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,6 +16,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -37,6 +42,7 @@ public class SecurityConfig {
 
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
   private final ObjectMapper objectMapper;
+  private final CustomUserDetailsService customUserDetailsService;
 
   @Value("${cors.allowed-origins}")
   private String[] allowedOrigins;
@@ -44,6 +50,14 @@ public class SecurityConfig {
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
+  }
+
+  @Bean
+  public AuthenticationProvider authenticationProvider() {
+    DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+    authProvider.setUserDetailsService(customUserDetailsService);
+    authProvider.setPasswordEncoder(passwordEncoder());
+    return authProvider;
   }
 
   @Bean
@@ -110,8 +124,7 @@ public class SecurityConfig {
                         new AntPathRequestMatcher("/api/user/accountnamevalid"),
                         new AntPathRequestMatcher("/api/user/emailvalid"),
                         new AntPathRequestMatcher("/api/user/login"),
-                        new AntPathRequestMatcher("/api/user/checktoken"),
-                        new AntPathRequestMatcher("/api/post/**"))
+                        new AntPathRequestMatcher("/api/user/checktoken"))
                     .permitAll()
                     // 나머지 API는 인증 필요
                     .anyRequest()
@@ -121,5 +134,11 @@ public class SecurityConfig {
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
+  }
+
+  @Bean
+  public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
+      throws Exception {
+    return config.getAuthenticationManager();
   }
 }

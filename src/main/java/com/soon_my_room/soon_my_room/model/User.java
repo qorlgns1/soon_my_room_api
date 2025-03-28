@@ -4,12 +4,17 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.GenericGenerator;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @Entity
 @Table(name = "users")
@@ -18,7 +23,7 @@ import org.hibernate.annotations.GenericGenerator;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User {
+public class User implements UserDetails {
 
   @Id
   @GeneratedValue(generator = "UUID")
@@ -56,6 +61,8 @@ public class User {
 
   @Builder.Default private boolean active = true;
 
+  @Builder.Default private Role role = Role.USER;
+
   @PrePersist
   public void prePersist() {
     this.createdAt = LocalDateTime.now();
@@ -64,5 +71,20 @@ public class User {
   @PreUpdate
   public void preUpdate() {
     this.updatedAt = LocalDateTime.now();
+  }
+
+  @Override
+  public Collection<? extends GrantedAuthority> getAuthorities() {
+    return List.of(new SimpleGrantedAuthority(role.name()));
+  }
+
+  @Override
+  public String getUsername() {
+    return email;
+  }
+
+  private enum Role {
+    USER,
+    ADMIN
   }
 }

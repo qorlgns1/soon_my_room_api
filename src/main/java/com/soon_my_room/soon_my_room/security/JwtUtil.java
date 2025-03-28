@@ -1,21 +1,19 @@
 package com.soon_my_room.soon_my_room.security;
 
 import com.soon_my_room.soon_my_room.exception.JwtAuthenticationException;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.UnsupportedJwtException;
+import com.soon_my_room.soon_my_room.model.User;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
+import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import javax.crypto.SecretKey;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -27,24 +25,25 @@ public class JwtUtil {
   @Value("${app.jwt.expiration}")
   private long expirationTime;
 
-  // 토큰 생성
-  public String generateToken(String email) {
-    return Jwts.builder()
-        .subject(email)
-        .issuedAt(new Date(System.currentTimeMillis()))
-        .expiration(new Date(System.currentTimeMillis() + expirationTime))
-        .signWith(getSigningKey())
-        .compact();
+  @Getter private SecretKey signingKey;
+
+  @PostConstruct
+  public void init() {
+    byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+    this.signingKey = Keys.hmacShaKeyFor(keyBytes);
   }
 
-  // 클레임을 추가하여 토큰 생성
-  public String generateToken(String email, Map<String, Object> claims) {
+  public String generateToken(User userDetails) {
+    return generateToken(new HashMap<>(), userDetails);
+  }
+
+  String generateToken(Map<String, Object> extraClaims, User userDetails) {
     return Jwts.builder()
-        .subject(email)
-        .claims(claims)
+        .subject(userDetails.getUsername())
+        .claims(extraClaims)
         .issuedAt(new Date(System.currentTimeMillis()))
-        .expiration(new Date(System.currentTimeMillis() + expirationTime))
-        .signWith(getSigningKey())
+        .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 24))
+        .signWith(getSigningKey(), Jwts.SIG.HS512)
         .compact();
   }
 
@@ -69,13 +68,7 @@ public class JwtUtil {
 
   // 토큰에서 만료 시간 추출
   public Date extractExpiration(String token) {
-    try {
-      return extractClaim(token, Claims::getExpiration);
-    } catch (JwtException e) {
-      throw new JwtAuthenticationException(
-          JwtAuthenticationException.ErrorType.GENERAL_ERROR,
-          "만료 시간 추출 중 오류 발생: " + e.getMessage());
-    }
+    return extractClaim(token, Claims::getExpiration);
   }
 
   public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -83,35 +76,41 @@ public class JwtUtil {
     return claimsResolver.apply(claims);
   }
 
+  // 토큰에서 모든 클레임 추출 및 예외 처리 통합
   private Claims extractAllClaims(String token) {
     try {
       return Jwts.parser()
-          .verifyWith(getSigningKey())
+          .verifyWith(getSigningKey()) // SecretKey 생성 메서드 사용
           .build()
           .parseSignedClaims(token)
           .getPayload();
     } catch (ExpiredJwtException e) {
+      // 만료 예외 발생 시 JwtAuthenticationException으로 변환하여 던짐
       throw new JwtAuthenticationException(JwtAuthenticationException.ErrorType.TOKEN_EXPIRED, e);
     } catch (SignatureException e) {
+      // 서명 검증 실패 예외 발생 시 JwtAuthenticationException으로 변환하여 던짐
       throw new JwtAuthenticationException(
           JwtAuthenticationException.ErrorType.TOKEN_SIGNATURE_INVALID, e);
     } catch (MalformedJwtException e) {
+      // 토큰 형식 오류 예외 발생 시 JwtAuthenticationException으로 변환하여 던짐
       throw new JwtAuthenticationException(JwtAuthenticationException.ErrorType.TOKEN_MALFORMED, e);
     } catch (UnsupportedJwtException e) {
+      // 지원되지 않는 토큰 형식 예외 발생 시 JwtAuthenticationException으로 변환하여 던짐
       throw new JwtAuthenticationException(
           JwtAuthenticationException.ErrorType.TOKEN_INVALID_FORMAT, e);
+    } catch (IllegalArgumentException e) {
+      // 잘못된 인자 예외 (예: 빈 토큰) 발생 시 JwtAuthenticationException으로 변환하여 던짐
+      throw new JwtAuthenticationException(
+          JwtAuthenticationException.ErrorType.TOKEN_INVALID_FORMAT,
+          "Invalid token argument: " + e.getMessage());
     } catch (JwtException e) {
+      // 기타 JWT 관련 예외 발생 시 JwtAuthenticationException으로 변환하여 던짐
       throw new JwtAuthenticationException(JwtAuthenticationException.ErrorType.GENERAL_ERROR, e);
     }
   }
 
-  private SecretKey getSigningKey() {
-    byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
-    return Keys.hmacShaKeyFor(keyBytes);
-  }
-
   // 토큰 유효성 검사
-  public Boolean validateToken(String token, UserDetails userDetails) {
+  public Boolean validateToken(String token, User userDetails) {
     try {
       final String email = extractEmail(token);
       return (email.equals(userDetails.getUsername()) && !isTokenExpired(token));
@@ -127,15 +126,7 @@ public class JwtUtil {
 
   // 토큰 만료 확인
   private Boolean isTokenExpired(String token) {
-    try {
-      return extractExpiration(token).before(new Date());
-    } catch (JwtAuthenticationException e) {
-      // 이미 특정 예외 유형으로 포장되어 있으므로 다시 던짐
-      throw e;
-    } catch (Exception e) {
-      throw new JwtAuthenticationException(
-          JwtAuthenticationException.ErrorType.GENERAL_ERROR,
-          "토큰 만료 확인 중 오류 발생: " + e.getMessage());
-    }
+    // 토큰 만료 시간 추출 후 현재 시간과 비교
+    return extractExpiration(token).before(new Date());
   }
 }

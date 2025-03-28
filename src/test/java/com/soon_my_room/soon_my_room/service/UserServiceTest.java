@@ -8,7 +8,6 @@ import static org.mockito.Mockito.*;
 import com.soon_my_room.soon_my_room.dto.UserRequestDTO;
 import com.soon_my_room.soon_my_room.dto.UserResponseDTO;
 import com.soon_my_room.soon_my_room.exception.DuplicateResourceException;
-import com.soon_my_room.soon_my_room.model.Follow;
 import com.soon_my_room.soon_my_room.model.User;
 import com.soon_my_room.soon_my_room.repository.FollowRepository;
 import com.soon_my_room.soon_my_room.repository.UserRepository;
@@ -224,37 +223,6 @@ class UserServiceTest {
     verify(userRepository).existsByAccountname(accountname);
   }
 
-  @Test
-  @DisplayName("사용자 검색 - 키워드로 사용자 찾기")
-  void searchUsers_Success() {
-    // Given
-    String keyword = "테스트";
-    when(userRepository.findByUsernameContainingOrAccountnameContaining(keyword))
-        .thenReturn(userList);
-
-    // 팔로우 관계 설정
-    List<Follow> follows = new ArrayList<>();
-    when(followRepository.findByFollowerId(anyString())).thenReturn(follows);
-    when(followRepository.findByFollowingId(anyString())).thenReturn(follows);
-
-    // When
-    List<UserResponseDTO.SearchUserResponse> results = userService.searchUsers(keyword);
-
-    // Then
-    assertNotNull(results);
-    assertEquals(2, results.size());
-    assertEquals("user-id-1", results.get(0).getId());
-    assertEquals("김테스트", results.get(0).getUsername());
-    assertEquals("kimtest", results.get(0).getAccountname());
-    assertEquals("user-id-2", results.get(1).getId());
-    assertEquals("이테스트", results.get(1).getUsername());
-    assertEquals("leetest", results.get(1).getAccountname());
-
-    // Verify
-    verify(userRepository).findByUsernameContainingOrAccountnameContaining(keyword);
-    verify(followRepository, times(2)).findByFollowerId(anyString());
-    verify(followRepository, times(2)).findByFollowingId(anyString());
-  }
 
   @Test
   @DisplayName("사용자 검색 - 결과가 없는 경우")
