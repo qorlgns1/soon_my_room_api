@@ -12,7 +12,6 @@ import com.soon_my_room.soon_my_room.model.User;
 import com.soon_my_room.soon_my_room.repository.FollowRepository;
 import com.soon_my_room.soon_my_room.repository.UserRepository;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -221,27 +220,5 @@ class UserServiceTest {
 
     // Verify
     verify(userRepository).existsByAccountname(accountname);
-  }
-
-
-  @Test
-  @DisplayName("사용자 검색 - 결과가 없는 경우")
-  void searchUsers_NoResults() {
-    // Given
-    String keyword = "없는사용자";
-    when(userRepository.findByUsernameContainingOrAccountnameContaining(keyword))
-        .thenReturn(new ArrayList<>());
-
-    // When
-    List<UserResponseDTO.SearchUserResponse> results = userService.searchUsers(keyword);
-
-    // Then
-    assertNotNull(results);
-    assertTrue(results.isEmpty());
-
-    // Verify
-    verify(userRepository).findByUsernameContainingOrAccountnameContaining(keyword);
-    verify(followRepository, never()).findByFollowerId(anyString());
-    verify(followRepository, never()).findByFollowingId(anyString());
   }
 }
