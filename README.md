@@ -12,8 +12,7 @@
 🚀 **API 서버가 배포되었습니다!**
 
 - **API 엔드포인트**: [https://soon-my-room.kihoonbae.store/api](https://soon-my-room.kihoonbae.store/api)
-- **API 문서 (Swagger UI)
-  **: [https://soon-my-room.kihoonbae.store/swagger-ui/index.html](https://soon-my-room.kihoonbae.store/swagger-ui/index.html)
+- **API 문서 (Swagger UI)**: [https://soon-my-room.kihoonbae.store/swagger-ui/index.html](https://soon-my-room.kihoonbae.store/swagger-ui/index.html)
 
 ## 기술 스택
 
@@ -26,17 +25,17 @@
 - **파일 스토리지**: AWS S3
 - **코드 스타일**: Google Java Format (Spotless 적용)
 - **컨테이너화**: Docker
-- **인증**: JWT
+- **인증**: JWT (JJWT 0.12.6)
 
 ### AWS 인프라
 
 - **EC2**: 애플리케이션 호스팅
 - **RDS**: PostgreSQL 데이터베이스 호스팅
 - **S3**: 이미지 파일 저장 및 관리
-    - 프로필 이미지 버킷
-    - 게시글 이미지 버킷
-    - 상품 이미지 버킷
-    - 기본 이미지 버킷
+  - 프로필 이미지 버킷
+  - 게시글 이미지 버킷
+  - 상품 이미지 버킷
+  - 기본 이미지 버킷
 
 ### CI/CD 및 배포 환경
 
@@ -62,20 +61,34 @@
 현재 인프라 구성은 다음과 같습니다:
 
 1. **GitHub Actions 워크플로우**:
-    * 코드 변경 시 자동 빌드 및 테스트
-    * Docker 이미지 빌드 및 Docker Hub 푸시
-    * SSH를 통한 EC2 서버 배포
+
+   - 코드 변경 시 자동 빌드 및 테스트
+   - Docker 이미지 빌드 및 Docker Hub 푸시
+   - SSH를 통한 EC2 서버 배포
 
 2. **EC2 서버**:
-    * Docker 컨테이너 실행
-    * Nginx 리버스 프록시 (SSL 처리 및 라우팅)
-    * Blue-Green 배포를 위한 배포 스크립트
+
+   - Docker 컨테이너 실행
+   - Nginx 리버스 프록시 (SSL 처리 및 라우팅)
+   - Blue-Green 배포를 위한 배포 스크립트
 
 3. **Blue-Green 배포**:
-    * Blue 환경: 포트 9000
-    * Green 환경: 포트 9001
-    * Nginx 설정을 통한 트래픽 전환
-    * 롤백 기능 지원
+
+   - Blue 환경: 포트 9000
+   - Green 환경: 포트 9001
+   - Nginx 설정을 통한 트래픽 전환
+   - 롤백 기능 지원
+
+4. **AWS S3 스토리지**:
+
+   - 사용자 프로필 이미지, 게시글 이미지, 상품 이미지 등 저장
+   - 미리 서명된 URL을 통한 안전한 이미지 액세스
+   - 버킷별 권한 및 정책 관리
+
+5. **AWS RDS PostgreSQL**:
+   - 트랜잭션 처리 및 데이터 무결성 보장
+   - 자동 백업 구성
+   - 성능 모니터링 및 로깅
 
 ## 데이터베이스 구조
 
@@ -134,7 +147,7 @@ erDiagram
 
     products {
         string id PK
-        string name
+        string itemName
         integer price
         string link
         string itemImage
@@ -173,12 +186,13 @@ src/
 - Gradle 8.x 이상
 - Docker 및 Docker Compose
 - AWS 계정 및 필요한 서비스 접근 권한
-    - AWS RDS PostgreSQL 인스턴스
-    - AWS S3 버킷 및 접근 키
+  - AWS RDS PostgreSQL 인스턴스
+  - AWS S3 버킷 및 접근 키
 
 ### 로컬 개발 환경 설정
 
 1. 프로젝트 클론:
+
    ```bash
    git clone https://github.com/soon-my-room/soon_my_room_api.git
    cd soon_my_room_api
@@ -186,15 +200,16 @@ src/
 
 2. 환경 변수 설정:
    `.env` 파일을 생성하고 다음 변수들을 설정합니다 (`.env.example` 참조):
+
    ```
    JWT_SECRET=your_jwt_secret_here
    JWT_EXPIRATION=86400000
-   
+
    # AWS RDS 설정
    DB_URL=jdbc:postgresql://your-rds-instance.rds.amazonaws.com:5432/your_db_name
    DB_USERNAME=your_db_username
    DB_PASSWORD=your_db_password
-   
+
    # AWS S3 설정
    AWS_S3_REGION=ap-northeast-2
    AWS_S3_ACCESS_KEY=your_aws_access_key
@@ -209,10 +224,13 @@ src/
 
 ```bash
 # 프로젝트 빌드
-./gradlew build
+./gradlew build -x test
 
 # 코드 스타일 적용
 ./gradlew spotlessApply
+
+# 테스트 실행
+./gradlew test
 
 # 서버 실행 (개발 환경)
 ./gradlew bootRun --args='--spring.profiles.active=dev'
@@ -222,6 +240,24 @@ src/
 ```
 
 기본적으로 서버는 `http://localhost:9000`에서 실행됩니다.
+
+## 테스트
+
+프로젝트는 다양한 테스트 케이스를 포함하고 있습니다:
+
+- 단위 테스트: 각 서비스, 유틸리티 클래스에 대한 테스트
+- 통합 테스트: 컨트롤러 및 리포지토리 계층 테스트
+- 예외 처리 테스트: 다양한 예외 상황 처리 테스트
+
+테스트 실행:
+
+```bash
+# 모든 테스트 실행
+./gradlew test
+
+# 특정 테스트 클래스 실행
+./gradlew test --tests "com.soon_my_room.soon_my_room.service.UserServiceTest"
+```
 
 ## 배포 프로세스
 
@@ -239,8 +275,8 @@ src/
 
 배포와 롤백을 위한 스크립트는 EC2 서버의 다음 위치에 있습니다:
 
-* 배포 스크립트: `/home/ubuntu/workspace/soon_my_room_deploy/soon_my_room_api_deploy.sh`
-* 롤백 스크립트: `/home/ubuntu/workspace/soon_my_room_deploy/soon_my_room_api_rollback.sh`
+- 배포 스크립트: `/home/ubuntu/workspace/soon_my_room_deploy/soon_my_room_api_deploy.sh`
+- 롤백 스크립트: `/home/ubuntu/workspace/soon_my_room_deploy/soon_my_room_api_rollback.sh`
 
 ## Docker를 통한 배포
 
@@ -290,8 +326,7 @@ chmod +x script/docker-deploy.sh
 
 SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 다음 URL에서 확인할 수 있습니다:
 
-- **배포된 Swagger UI
-  **: [https://soon-my-room.kihoonbae.store/swagger-ui/index.html](https://soon-my-room.kihoonbae.store/swagger-ui/index.html)
+- **배포된 Swagger UI**: [https://soon-my-room.kihoonbae.store/swagger-ui/index.html](https://soon-my-room.kihoonbae.store/swagger-ui/index.html)
 - **로컬 개발 환경 Swagger UI**: `http://localhost:9000/swagger-ui/index.html`
 - **OpenAPI JSON**: `http://localhost:9000/v3/api-docs`
 
@@ -350,37 +385,67 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 다음 URL에서 확�
 - `PUT /product/:productId`: 상품 정보 수정
 - `DELETE /product/:productId`: 상품 삭제
 
+## 기술적 특징
+
+### 보안
+
+- JWT 토큰 기반 인증
+- 비밀번호 BCrypt 암호화
+- CORS 설정을 통한 접근 제어
+- 상세한 예외 처리 및 로깅
+
+### 파일 업로드
+
+- S3 프리사인드 URL을 통한 안전한 이미지 파일 액세스
+- 이미지 파일 검증 (크기, 확장자 등)
+- 버킷별 이미지 저장 관리 (프로필, 게시글, 상품 등)
+
+### 예외 처리
+
+- 상세한 예외 분류 및 처리
+- 클라이언트에 친화적인 오류 메시지
+- 중앙 집중식 예외 처리 (GlobalExceptionHandler)
+
+### 테스트
+
+- 단위 테스트와 통합 테스트 구현
+- 모킹을 활용한 외부 의존성 테스트
+- 테스트 커버리지 관리
+
 ## 개발 로드맵
 
 1. **기초 설정** ✅
-    - 프로젝트 구조 설정 및 의존성 관리
-    - AWS RDS 데이터베이스 연결 및 JPA 설정
-    - Spring Security 및 JWT 인증 구현
-    - AWS S3 연동 및 이미지 관리 서비스 구현
-    - CORS 설정 및 환경별 프로필 구성
+
+   - 프로젝트 구조 설정 및 의존성 관리
+   - AWS RDS 데이터베이스 연결 및 JPA 설정
+   - Spring Security 및 JWT 인증 구현
+   - AWS S3 연동 및 이미지 관리 서비스 구현
+   - CORS 설정 및 환경별 프로필 구성
 
 2. **핵심 기능 개발** ✅
-    - 사용자 관리 API (회원가입, 로그인) ✅
-    - 프로필 관리 API ✅
-    - 팔로우/팔로잉 기능 ✅
-    - 이미지 업로드 기능 ✅
-    - 게시물 관련 API ✅
-    - 좋아요 기능 ✅
-    - 댓글 관련 API ✅
-    - 상품 등록 및 관리 API ✅
-    - 사용자 검색 기능 ✅
+
+   - 사용자 관리 API (회원가입, 로그인) ✅
+   - 프로필 관리 API ✅
+   - 팔로우/팔로잉 기능 ✅
+   - 이미지 업로드 기능 ✅
+   - 게시물 관련 API ✅
+   - 좋아요 기능 ✅
+   - 댓글 관련 API ✅
+   - 상품 등록 및 관리 API ✅
+   - 사용자 검색 기능 ✅
 
 3. **테스트 및 문서화** 🚧
-    - 단위 테스트 및 통합 테스트 작성
-    - API 문서화 완성 (Swagger) ✅
-    - 개발 가이드 작성
+
+   - 단위 테스트 및 통합 테스트 작성
+   - API 문서화 완성 (Swagger) ✅
+   - 개발 가이드 작성
 
 4. **배포 및 모니터링** ✅
-    - Docker 컨테이너화 ✅
-    - CI/CD 파이프라인 구축 ✅
-    - EC2를 통한 클라우드 배포 완료 ✅
-    - Blue-Green 배포 전략 구현 ✅
-    - 모니터링 및 로깅 설정 ✅
+   - Docker 컨테이너화 ✅
+   - CI/CD 파이프라인 구축 ✅
+   - EC2를 통한 클라우드 배포 완료 ✅
+   - Blue-Green 배포 전략 구현 ✅
+   - 모니터링 및 로깅 설정 ✅
 
 ## 문제 해결
 
@@ -401,6 +466,24 @@ SpringDoc OpenAPI를 통해 자동 생성된 API 문서는 다음 URL에서 확�
 - **빌드 오류**: Gradle 버전(8.x 이상) 및 JDK 버전(21 이상)을 확인합니다.
 - **실행 오류**: 필요한 환경 변수가 모두 설정되어 있는지 확인합니다.
 - **API 오류**: Swagger UI를 통해 API 스펙을 확인하고 올바른 요청 형식을 사용하고 있는지 검증합니다.
+
+## 성능 최적화
+
+- 데이터베이스 쿼리 최적화
+- N+1 문제 해결을 위한 적절한 패치 전략 사용
+- 이미지 처리 및 업로드 성능 향상
+- API 응답 시간 개선
+- 캐싱 전략 구현
+
+## 기여하기
+
+프로젝트에 기여하려면 다음 단계를 따르세요:
+
+1. 이 저장소를 포크합니다.
+2. 기능 브랜치를 생성합니다: `git checkout -b my-new-feature`
+3. 변경 사항을 커밋합니다: `git commit -am 'Add some feature'`
+4. 브랜치를 푸시합니다: `git push origin my-new-feature`
+5. Pull Request를 제출합니다.
 
 ## 라이센스
 
