@@ -2,6 +2,10 @@ FROM eclipse-temurin:21-jdk AS build
 
 WORKDIR /app
 
+# Sentry 인증 토큰을 환경 변수로 설정합니다.
+ARG SENTRY_AUTH_TOKEN # GitHub Actions의 build-args에서 값을 받습니다.
+ENV SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN} 
+
 # 그래들 파일 복사 (레이어 캐싱 활용을 위해)
 COPY gradlew .
 COPY gradle gradle

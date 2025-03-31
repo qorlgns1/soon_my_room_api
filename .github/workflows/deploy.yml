@@ -88,6 +88,8 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/soon-my-room-api:${{ github.sha }}
+          build-args: |
+            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
 
       - name: Copy env file to EC2
         uses: appleboy/scp-action@master
