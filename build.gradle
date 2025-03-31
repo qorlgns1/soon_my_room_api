@@ -7,11 +7,18 @@ plugins {
 }
 
 sentry {
-//   includeSourceContext = true
+    debug = true
+    includeSourceContext = true
+    additionalSourceDirsForSourceContext = ["./src/main/java"]
 
-  org = "kihoons-company"
-  projectName = "java-spring-boot"
-//   authToken = System.getenv("SENTRY_AUTH_TOKEN")
+    org = "kihoons-company"
+    projectName = "java-spring-boot"
+
+    includeDependenciesReport = true
+    authToken = System.getenv("SENTRY_AUTH_TOKEN")
+    autoInstallation {
+        enabled = true
+    }
 }
 
 group = 'com.soon-my-room'
