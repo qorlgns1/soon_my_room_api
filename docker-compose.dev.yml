@@ -6,26 +6,6 @@ services:
     container_name: soon-my-room-api-dev
     ports:
       - "9000:9000"
-    environment:
-      - SPRING_PROFILES_ACTIVE=dev
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRATION=${JWT_EXPIRATION}
-      - DB_URL=${DB_URL}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
-      # AWS S3 환경 변수
-      - AWS_S3_REGION=${AWS_S3_REGION}
-      - AWS_S3_ACCESS_KEY=${AWS_S3_ACCESS_KEY}
-      - AWS_S3_SECRET_KEY=${AWS_S3_SECRET_KEY}
-      - AWS_S3_BUCKET_PROFILES=${AWS_S3_BUCKET_PROFILES:-soon-my-room-profiles}
-      - AWS_S3_BUCKET_POSTS=${AWS_S3_BUCKET_POSTS:-soon-my-room-posts}
-      - AWS_S3_BUCKET_PRODUCTS=${AWS_S3_BUCKET_PRODUCTS:-soon-my-room-products}
-      - AWS_S3_BUCKET_DEFAULT=${AWS_S3_BUCKET_DEFAULT:-soon-my-room-default}
-      # Sentry 환경 변수
-      - SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN}
-      - SENTRY_DSN=${SENTRY_DSN}
-      - SENTRY_ORG=${SENTRY_ORG}
-      - SENTRY_PROJECT=${SENTRY_PROJECT}
     env_file:
       - .env
     volumes:
