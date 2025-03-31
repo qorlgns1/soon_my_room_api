@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   app:
@@ -21,6 +21,11 @@ services:
       - AWS_S3_BUCKET_POSTS=${AWS_S3_BUCKET_POSTS:-soon-my-room-posts}
       - AWS_S3_BUCKET_PRODUCTS=${AWS_S3_BUCKET_PRODUCTS:-soon-my-room-products}
       - AWS_S3_BUCKET_DEFAULT=${AWS_S3_BUCKET_DEFAULT:-soon-my-room-default}
+      # Sentry 환경 변수
+      - SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN}
+      - SENTRY_DSN=${SENTRY_DSN}
+      - SENTRY_ORG=${SENTRY_ORG}
+      - SENTRY_PROJECT=${SENTRY_PROJECT}
     env_file:
       - .env
     volumes:
