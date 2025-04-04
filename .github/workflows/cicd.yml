@@ -177,10 +177,25 @@ jobs:
             echo "Current Service: $CURRENT_SERVICE (Port: $CURRENT_PORT)"
             echo "Target Service: $TARGET_SERVICE (Port: $TARGET_PORT)"
 
-            echo "current_service=${CURRENT_SERVICE}" >> $GITHUB_OUTPUT
-            echo "target_service=${TARGET_SERVICE}" >> $GITHUB_OUTPUT
-            echo "current_port=${CURRENT_PORT}" >> $GITHUB_OUTPUT
-            echo "target_port=${TARGET_PORT}" >> $GITHUB_OUTPUT
+            echo "current_service=${CURRENT_SERVICE}"
+            echo "target_service=${TARGET_SERVICE}"
+            echo "current_port=${CURRENT_PORT}"
+            echo "target_port=${TARGET_PORT}"
+
+      - name: Parse deployment status output # 새로운 스텝 추가
+        id: parse_status
+        run: |
+          echo "${{ steps.check_status.outputs.stdout }}" | grep '^current_service=' >> $GITHUB_ENV
+          echo "${{ steps.check_status.outputs.stdout }}" | grep '^target_service=' >> $GITHUB_ENV
+          echo "${{ steps.check_status.outputs.stdout }}" | grep '^current_port=' >> $GITHUB_ENV
+          echo "${{ steps.check_status.outputs.stdout }}" | grep '^target_port=' >> $GITHUB_ENV
+          # GITHUB_ENV 에 잘 설정되었는지 확인 (디버깅용)
+          echo "--- Parsed Environment Variables ---"
+          echo "CURRENT_SERVICE=${{ env.CURRENT_SERVICE }}"
+          echo "TARGET_SERVICE=${{ env.TARGET_SERVICE }}"
+          echo "CURRENT_PORT=${{ env.CURRENT_PORT }}"
+          echo "TARGET_PORT=${{ env.TARGET_PORT }}"
+          echo "-----------------------------------"
 
       - name: Deploy new version
         uses: appleboy/ssh-action@master
