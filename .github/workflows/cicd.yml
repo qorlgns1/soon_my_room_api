@@ -152,7 +152,7 @@ jobs:
           username: ${{ env.EC2_USERNAME }}
           key: ${{ env.EC2_SSH_KEY }}
           script: |
-            NGINX_CONF_PATH="~/workspace/reverse-proxy/nginx/conf.d/${{ env.NGINX_CONF_NAME }}"
+            NGINX_CONF_PATH="/home/ubuntu/workspace/reverse-proxy/nginx/conf.d/${{ env.NGINX_CONF_NAME }}" 
             SERVICE_PREFIX="${{ env.SERVICE_PREFIX }}"
             BLUE_SERVICE="${SERVICE_PREFIX}-app-blue"
             GREEN_SERVICE="${SERVICE_PREFIX}-app-green"
@@ -163,11 +163,15 @@ jobs:
             CURRENT_PORT=${{ env.BLUE_PORT }}
             TARGET_PORT=${{ env.GREEN_PORT }}
 
-            if grep -q "proxy_pass http://${GREEN_SERVICE}:9000" $NGINX_CONF_PATH; then
+            # 파일 존재 여부 확인 후 grep 실행 (오류 방지)
+            if [ -f "$NGINX_CONF_PATH" ] && grep -q "proxy_pass http://${GREEN_SERVICE}:9000" "$NGINX_CONF_PATH"; then
               CURRENT_SERVICE=$GREEN_SERVICE
               TARGET_SERVICE=$BLUE_SERVICE
               CURRENT_PORT=${{ env.GREEN_PORT }}
               TARGET_PORT=${{ env.BLUE_PORT }}
+            elif [ ! -f "$NGINX_CONF_PATH" ]; then
+               echo "Error: Nginx conf file not found at $NGINX_CONF_PATH"
+               exit 1 # 파일 없으면 스텝 실패 처리
             fi
 
             echo "Current Service: $CURRENT_SERVICE (Port: $CURRENT_PORT)"
