@@ -41,7 +41,7 @@ public class S3StorageService {
 
   // 허용된 이미지 확장자
   private final List<String> ALLOWED_EXTENSIONS =
-      Arrays.asList("jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "heic");
+      Arrays.asList("jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "heic", "svg");
 
   // 최대 파일 크기 (10MB)
   private final long MAX_FILE_SIZE = 10 * 1024 * 1024;
