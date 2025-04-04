@@ -253,11 +253,23 @@ jobs:
             echo "Target Service: $TARGET_SERVICE (Port: $TARGET_PORT)"
             echo "-------------------------"
 
-            # 결과 전달 (::set-output 사용)
-            echo "::set-output name=current_service::$CURRENT_SERVICE"
-            echo "::set-output name=target_service::$TARGET_SERVICE"
-            echo "::set-output name=current_port::$CURRENT_PORT"
-            echo "::set-output name=target_port::$TARGET_PORT"
+            echo "current_service=$CURRENT_SERVICE" >> $GITHUB_OUTPUT
+            echo "target_service=$TARGET_SERVICE" >> $GITHUB_OUTPUT
+            echo "current_port=$CURRENT_PORT" >> $GITHUB_OUTPUT
+            echo "target_port=$TARGET_PORT" >> $GITHUB_OUTPUT
+
+      # 5.5 새 버전 앱 배포 전에 EC2에서 Docker Hub 로그인 수행
+      - name: Log in to Docker Hub on EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ env.EC2_SSH_KEY }}
+          script: |
+            echo "Logging into Docker Hub on EC2..."
+            # GitHub Secrets 값을 사용하여 로그인 (표준 입력을 통해 비밀번호 전달 권장)
+            docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin <<< "${{ secrets.DOCKER_HUB_TOKEN }}"
+            echo "Docker login command executed on EC2."
 
       # 6. 새 버전 앱 배포 (Secrets, env, check_status output 필요)
       - name: Deploy New Application Version
