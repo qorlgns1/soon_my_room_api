@@ -95,7 +95,7 @@ jobs:
           EC2_BASE_WORKSPACE_PATH="/home/ubuntu/workspace" # EC2 프로젝트 기본 경로
           if [[ "${{ needs.build.outputs.branch_name }}" == "main" ]]; then
             echo "EC2_HOST=${{ secrets.EC2_HOST }}" >> $GITHUB_ENV
-            echo "EC2_USERNAME=ubuntu" >> $GITHUB_ENV # ubuntu 사용자로 고정
+            echo "EC2_USERNAME=${{ secrets.EC2_USERNAME }}" >> $GITHUB_ENV # ubuntu 사용자로 고정
             echo "EC2_SSH_KEY<<EOF" >> $GITHUB_ENV
             echo "${{ secrets.EC2_SSH_KEY }}" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
@@ -110,7 +110,7 @@ jobs:
             echo "GREEN_PORT=9001" >> $GITHUB_ENV
           else # develop branch
             echo "EC2_HOST=${{ secrets.EC2_HOST }}" >> $GITHUB_ENV
-            echo "EC2_USERNAME=${{ secrets.EC2_USERNAME }}"" >> $GITHUB_ENV
+            echo "EC2_USERNAME=${{ secrets.EC2_USERNAME }}" >> $GITHUB_ENV
             echo "EC2_SSH_KEY<<EOF" >> $GITHUB_ENV
             echo "${{ secrets.EC2_SSH_KEY }}" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
