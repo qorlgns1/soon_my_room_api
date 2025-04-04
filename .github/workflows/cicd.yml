@@ -49,6 +49,12 @@ jobs:
       - name: Apply Spotless
         run: ./gradlew spotlessApply
 
+      # 의존성 새로고침도 함께 수행
+      - name: Clean Gradle Cache # 테스트 실행 전에 캐시 정리
+        run: |
+          rm -rf $HOME/.gradle/caches/
+          ./gradlew clean --refresh-dependencies
+
       - name: Run tests
         env:
           # 테스트 시 PostgreSQL 연결 정보 대신 H2 설정을 사용하도록 관련 환경 변수를 명시적으로 비워줍니다.
