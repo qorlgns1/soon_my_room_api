@@ -42,6 +42,8 @@ jobs:
           cache: "gradle"
 
       - name: Build with Gradle
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: ./gradlew build -x test
 
       - name: Apply Spotless
