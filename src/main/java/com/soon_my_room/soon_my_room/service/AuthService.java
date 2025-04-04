@@ -48,16 +48,13 @@ public class AuthService {
     user.setRefreshToken(refreshToken);
     userRepository.save(user);
 
-    // Refresh Token을 HttponLy 쿠키로 설정
-    Cookie refreshTokenCookie = new Cookie("refresh_token", refreshToken);
-    refreshTokenCookie.setHttpOnly(true);
-    refreshTokenCookie.setSecure(true); // HTTPS에서만 전송
-    refreshTokenCookie.setPath("/api/user/refresh"); // refresh 엔드포인트에서만 사용
-    // 밀리초를 초로 변환하여 설정
+
     int refreshTokenMaxAgeInSeconds =
-        (int) TimeUnit.MILLISECONDS.toSeconds(refreshTokenExpirationMs);
-    refreshTokenCookie.setMaxAge(refreshTokenMaxAgeInSeconds);
-    response.addCookie(refreshTokenCookie);
+    (int) TimeUnit.MILLISECONDS.toSeconds(refreshTokenExpirationMs);
+
+    response.addHeader("Set-Cookie", 
+    String.format("refresh_token=%s; Max-Age=%d; Path=/api/user/refresh; HttpOnly; Secure; SameSite=None", 
+    refreshToken, refreshTokenMaxAgeInSeconds));
 
     // 응답에는 Access Token만 포함 (기존과 동일한 방식)
     return LoginResponseDTO.fromEntity(user, accessToken);
@@ -122,12 +119,7 @@ public class AuthService {
     user.setRefreshToken(null);
     userRepository.save(user);
 
-    // 쿠키에서 Refresh Token 제거
-    Cookie refreshTokenCookie = new Cookie("refresh_token", null);
-    refreshTokenCookie.setHttpOnly(true);
-    refreshTokenCookie.setSecure(true);
-    refreshTokenCookie.setPath("/api/user/refresh");
-    refreshTokenCookie.setMaxAge(0); // 즉시 만료
-    response.addCookie(refreshTokenCookie);
+    response.addHeader("Set-Cookie", 
+    "refresh_token=; Max-Age=0; Path=/api/user/refresh; HttpOnly; Secure; SameSite=None");
   }
 }
