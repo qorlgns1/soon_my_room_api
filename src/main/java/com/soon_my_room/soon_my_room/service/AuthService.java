@@ -8,7 +8,6 @@ import com.soon_my_room.soon_my_room.exception.ResourceNotFoundException;
 import com.soon_my_room.soon_my_room.model.User;
 import com.soon_my_room.soon_my_room.repository.UserRepository;
 import com.soon_my_room.soon_my_room.security.JwtUtil;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -48,13 +47,14 @@ public class AuthService {
     user.setRefreshToken(refreshToken);
     userRepository.save(user);
 
-
     int refreshTokenMaxAgeInSeconds =
-    (int) TimeUnit.MILLISECONDS.toSeconds(refreshTokenExpirationMs);
+        (int) TimeUnit.MILLISECONDS.toSeconds(refreshTokenExpirationMs);
 
-    response.addHeader("Set-Cookie", 
-    String.format("refresh_token=%s; Max-Age=%d; Path=/api/user/refresh; HttpOnly; Secure; SameSite=None", 
-    refreshToken, refreshTokenMaxAgeInSeconds));
+    response.addHeader(
+        "Set-Cookie",
+        String.format(
+            "refresh_token=%s; Max-Age=%d; Path=/api/user/refresh; HttpOnly; Secure; SameSite=None",
+            refreshToken, refreshTokenMaxAgeInSeconds));
 
     // 응답에는 Access Token만 포함 (기존과 동일한 방식)
     return LoginResponseDTO.fromEntity(user, accessToken);
@@ -119,7 +119,8 @@ public class AuthService {
     user.setRefreshToken(null);
     userRepository.save(user);
 
-    response.addHeader("Set-Cookie", 
-    "refresh_token=; Max-Age=0; Path=/api/user/refresh; HttpOnly; Secure; SameSite=None");
+    response.addHeader(
+        "Set-Cookie",
+        "refresh_token=; Max-Age=0; Path=/api/user/refresh; HttpOnly; Secure; SameSite=None");
   }
 }
