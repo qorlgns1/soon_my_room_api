@@ -67,6 +67,7 @@ public class SecurityConfig {
     configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(
         Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
+    configuration.setExposedHeaders(Arrays.asList("Set-Cookie", "Authorization"));
     configuration.setAllowCredentials(true); // 쿠키 포함 요청 허용 (CORS with credentials)
     configuration.setMaxAge(3600L);
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
