@@ -92,8 +92,16 @@ jobs:
           if [[ "${{ needs.build.outputs.branch_name }}" == "main" ]]; then
             echo "EC2_HOST=${{ secrets.EC2_HOST }}" >> $GITHUB_ENV
             echo "EC2_USERNAME=${{ secrets.EC2_USERNAME }}" >> $GITHUB_ENV
-            echo "EC2_SSH_KEY=${{ secrets.EC2_SSH_KEY }}" >> $GITHUB_ENV
-            echo "ENV_FILE_CONTENT=${{ secrets.PROD_ENV_FILE_CONTENT }}" >> $GITHUB_ENV # Secrets에 .env.production.local 내용 저장 필요
+            # --- SSH 키 수정 시작 ---
+            echo "EC2_SSH_KEY<<EOF" >> $GITHUB_ENV
+            echo "${{ secrets.EC2_SSH_KEY }}" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+            # --- SSH 키 수정 끝 ---
+            # --- .env 내용 수정 시작 ---
+            echo "ENV_FILE_CONTENT<<EOF" >> $GITHUB_ENV
+            echo "${{ secrets.PROD_ENV_FILE_CONTENT }}" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+            # --- .env 내용 수정 끝 ---
             echo "ENV_FILE_NAME=.env.production.local" >> $GITHUB_ENV
             echo "COMPOSE_FILE_NAME=docker-compose.prod.yml" >> $GITHUB_ENV
             echo "NGINX_CONF_NAME=prod-soon-my-room.kihoonbae.store.conf" >> $GITHUB_ENV
@@ -102,10 +110,18 @@ jobs:
             echo "BLUE_PORT=9000" >> $GITHUB_ENV
             echo "GREEN_PORT=9001" >> $GITHUB_ENV
           else # develop branch
-            echo "EC2_HOST=${{ secrets.EC2_HOST }}" >> $GITHUB_ENV
-            echo "EC2_USERNAME=${{ secrets.EC2_USERNAME }}" >> $GITHUB_ENV
-            echo "EC2_SSH_KEY=${{ secrets.EC2_SSH_KEY }}" >> $GITHUB_ENV
-            echo "ENV_FILE_CONTENT=${{ secrets.DEV_ENV_FILE_CONTENT }}" >> $GITHUB_ENV # Secrets에 .env.development.local 내용 저장 필요
+            echo "EC2_HOST=${{ secrets.EC2_HOST }}" >> $GITHUB_ENV # develop용 Secret 사용 필요 시 secrets.DEV_EC2_HOST 등으로 변경
+            echo "EC2_USERNAME=${{ secrets.EC2_USERNAME }}" >> $GITHUB_ENV # develop용 Secret 사용 필요 시 secrets.DEV_EC2_USERNAME 등으로 변경
+            # --- SSH 키 수정 시작 ---
+            echo "EC2_SSH_KEY<<EOF" >> $GITHUB_ENV
+            echo "${{ secrets.EC2_SSH_KEY }}" >> $GITHUB_ENV # develop용 Secret 사용 필요 시 secrets.DEV_EC2_SSH_KEY 등으로 변경
+            echo "EOF" >> $GITHUB_ENV
+            # --- SSH 키 수정 끝 ---
+            # --- .env 내용 수정 시작 ---
+            echo "ENV_FILE_CONTENT<<EOF" >> $GITHUB_ENV
+            echo "${{ secrets.DEV_ENV_FILE_CONTENT }}" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+            # --- .env 내용 수정 끝 ---
             echo "ENV_FILE_NAME=.env.development.local" >> $GITHUB_ENV
             echo "COMPOSE_FILE_NAME=docker-compose.dev.yml" >> $GITHUB_ENV
             echo "NGINX_CONF_NAME=dev-soon-my-room.kihoonbae.store.conf" >> $GITHUB_ENV
