@@ -1,0 +1,150 @@
+name: Rollback Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to rollback (development or production)"
+        required: true
+        type: choice
+        options:
+          - development
+          - production
+      # image_tag: # 특정 태그 롤백은 구현 복잡성 증가로 일단 제외
+      #   description: 'Optional: Specific image tag to rollback to (e.g., develop-abc1234)'
+      #   required: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - name: Set Environment Variables
+        id: set_env
+        run: |
+          if [[ "${{ github.event.inputs.environment }}" == "production" ]]; then
+            echo "EC2_HOST=${{ secrets.PROD_EC2_HOST }}" >> $GITHUB_ENV
+            echo "EC2_USERNAME=${{ secrets.PROD_EC2_USERNAME }}" >> $GITHUB_ENV
+            echo "EC2_SSH_KEY=${{ secrets.PROD_EC2_SSH_KEY }}" >> $GITHUB_ENV
+            echo "COMPOSE_FILE_NAME=docker-compose.prod.yml" >> $GITHUB_ENV
+            echo "NGINX_CONF_NAME=prod-soon-my-room.kihoonbae.store.conf" >> $GITHUB_ENV
+            echo "NGINX_SERVICE_NAME=nginx-prod" >> $GITHUB_ENV
+            echo "SERVICE_PREFIX=prod" >> $GITHUB_ENV
+            echo "BLUE_PORT=9000" >> $GITHUB_ENV
+            echo "GREEN_PORT=9001" >> $GITHUB_ENV
+          else # development
+            echo "EC2_HOST=${{ secrets.DEV_EC2_HOST }}" >> $GITHUB_ENV
+            echo "EC2_USERNAME=${{ secrets.DEV_EC2_USERNAME }}" >> $GITHUB_ENV
+            echo "EC2_SSH_KEY=${{ secrets.DEV_EC2_SSH_KEY }}" >> $GITHUB_ENV
+            echo "COMPOSE_FILE_NAME=docker-compose.dev.yml" >> $GITHUB_ENV
+            echo "NGINX_CONF_NAME=dev-soon-my-room.kihoonbae.store.conf" >> $GITHUB_ENV
+            echo "NGINX_SERVICE_NAME=nginx-dev" >> $GITHUB_ENV
+            echo "SERVICE_PREFIX=dev" >> $GITHUB_ENV
+            echo "BLUE_PORT=8000" >> $GITHUB_ENV
+            echo "GREEN_PORT=8001" >> $GITHUB_ENV
+          fi
+
+      - name: Check current deployment status and determine rollback target
+        id: check_status
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ env.EC2_SSH_KEY }}
+          script: |
+            NGINX_CONF_PATH="~/workspace/reverse-proxy/nginx/conf.d/${{ env.NGINX_CONF_NAME }}"
+            SERVICE_PREFIX="${{ env.SERVICE_PREFIX }}"
+            BLUE_SERVICE="${SERVICE_PREFIX}-app-blue"
+            GREEN_SERVICE="${SERVICE_PREFIX}-app-green"
+
+            # 현재 Nginx가 바라보는, 문제가 된 서비스 확인 (Blue를 기본으로 가정)
+            CURRENT_SERVICE=$BLUE_SERVICE
+            ROLLBACK_TARGET_SERVICE=$GREEN_SERVICE
+            ROLLBACK_TARGET_PORT=${{ env.GREEN_PORT }}
+
+            if grep -q "proxy_pass http://${GREEN_SERVICE}:9000" $NGINX_CONF_PATH; then
+              CURRENT_SERVICE=$GREEN_SERVICE
+              ROLLBACK_TARGET_SERVICE=$BLUE_SERVICE
+              ROLLBACK_TARGET_PORT=${{ env.BLUE_PORT }}
+            fi
+
+            echo "Current problematic service: $CURRENT_SERVICE"
+            echo "Rollback target service: $ROLLBACK_TARGET_SERVICE (Port: $ROLLBACK_TARGET_PORT)"
+
+            # 롤백 대상 서비스가 존재하는지 확인
+            if ! docker ps -q -f name=${ROLLBACK_TARGET_SERVICE}; then
+              echo "Rollback target container ${ROLLBACK_TARGET_SERVICE} does not exist or is not running. Cannot proceed with this rollback method."
+              # exit 1 # 필요시 여기서 종료
+            fi
+
+            echo "current_service=${CURRENT_SERVICE}" >> $GITHUB_OUTPUT
+            echo "rollback_target_service=${ROLLBACK_TARGET_SERVICE}" >> $GITHUB_OUTPUT
+            echo "rollback_target_port=${ROLLBACK_TARGET_PORT}" >> $GITHUB_OUTPUT
+
+      - name: Start/Ensure Rollback Target is Running & Health Check
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ env.EC2_SSH_KEY }}
+          script: |
+            cd ~/workspace/reverse-proxy
+            ROLLBACK_TARGET_SERVICE=${{ steps.check_status.outputs.rollback_target_service }}
+            ROLLBACK_TARGET_PORT=${{ steps.check_status.outputs.rollback_target_port }}
+            COMPOSE_FILE=${{ env.COMPOSE_FILE_NAME }}
+
+            echo "Ensuring rollback target service $ROLLBACK_TARGET_SERVICE is running..."
+            # docker-compose start 는 exited 상태의 컨테이너만 시작하므로, up으로 존재 보장
+            docker-compose -f $COMPOSE_FILE up -d --no-deps $ROLLBACK_TARGET_SERVICE
+
+            echo "Performing health check on rollback target port $ROLLBACK_TARGET_PORT..."
+            for i in {1..15}; do
+              HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$ROLLBACK_TARGET_PORT/swagger-ui/index.html)
+              if [ "$HEALTH_CHECK" == "200" ]; then
+                echo "Rollback target health check successful!"
+                exit 0
+              fi
+              echo "Rollback health check attempt $i failed with status $HEALTH_CHECK. Retrying in 2 seconds..."
+              sleep 2
+            done
+            echo "Rollback target health check failed after 15 attempts."
+            exit 1
+
+      - name: Rollback Nginx and stop current container
+        # 헬스 체크 성공 시에만 실행
+        if: success()
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ env.EC2_SSH_KEY }}
+          script: |
+            NGINX_CONF_PATH="~/workspace/reverse-proxy/nginx/conf.d/${{ env.NGINX_CONF_NAME }}"
+            CURRENT_SERVICE=${{ steps.check_status.outputs.current_service }}
+            ROLLBACK_TARGET_SERVICE=${{ steps.check_status.outputs.rollback_target_service }}
+            NGINX_SERVICE=${{ env.NGINX_SERVICE_NAME }}
+            COMPOSE_FILE=${{ env.COMPOSE_FILE_NAME }}
+            WORKSPACE_DIR="~/workspace/reverse-proxy"
+
+            echo "Rolling back Nginx to target service: $ROLLBACK_TARGET_SERVICE"
+            sudo cp $NGINX_CONF_PATH ${NGINX_CONF_PATH}.rollback_backup
+
+            # proxy_pass 를 ROLLBACK_TARGET 서비스 이름으로 변경
+            sudo sed -i "s|proxy_pass http://${CURRENT_SERVICE}:9000|proxy_pass http://${ROLLBACK_TARGET_SERVICE}:9000|g" $NGINX_CONF_PATH
+
+            echo "Testing Nginx configuration..."
+            cd $WORKSPACE_DIR
+            if docker-compose -f $COMPOSE_FILE exec $NGINX_SERVICE nginx -t; then
+              echo "Nginx configuration test successful. Reloading Nginx..."
+              docker-compose -f $COMPOSE_FILE exec $NGINX_SERVICE nginx -s reload
+
+              echo "Traffic rolled back to $ROLLBACK_TARGET_SERVICE. Stopping problematic container $CURRENT_SERVICE after 30 seconds..."
+              sleep 30
+              docker-compose -f $COMPOSE_FILE stop $CURRENT_SERVICE
+              echo "Problematic container $CURRENT_SERVICE stopped."
+            else
+              echo "Nginx configuration test failed during rollback. Reverting Nginx changes..."
+              sudo mv ${NGINX_CONF_PATH}.rollback_backup $NGINX_CONF_PATH
+              # 롤백 실패 시 추가 조치 필요 가능성 (예: 알림)
+              exit 1
+            fi
