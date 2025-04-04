@@ -59,6 +59,9 @@ public class User implements UserDetails {
 
   private LocalDateTime updatedAt;
 
+  @Column(columnDefinition = "TEXT")
+  private String refreshToken;
+
   @Builder.Default private boolean active = true;
 
   @Builder.Default private Role role = Role.USER;

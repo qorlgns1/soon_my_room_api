@@ -34,6 +34,7 @@ jobs:
           SENTRY_DSN=${{ secrets.SENTRY_DSN }}
           SENTRY_ORG=${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT=${{ secrets.SENTRY_PROJECT }}
+          CORS_ALLOWED_ORIGINS=${{ secrets.CORS_ALLOWED_ORIGINS }}
           EOL
 
       - name: Check for empty environment variables

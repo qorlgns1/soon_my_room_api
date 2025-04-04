@@ -5,6 +5,7 @@ import com.soon_my_room.soon_my_room.dto.LoginRequestDTO;
 import com.soon_my_room.soon_my_room.dto.LoginResponseDTO;
 import com.soon_my_room.soon_my_room.dto.UserRequestDTO;
 import com.soon_my_room.soon_my_room.dto.UserResponseDTO;
+import com.soon_my_room.soon_my_room.exception.JwtAuthenticationException;
 import com.soon_my_room.soon_my_room.service.AuthService;
 import com.soon_my_room.soon_my_room.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,11 +14,15 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -68,7 +73,12 @@ public class UserController {
     return ResponseEntity.ok(response);
   }
 
-  @Operation(summary = "로그인", description = "이메일과 비밀번호를 통해 사용자 로그인을 처리합니다.")
+  @Operation(
+      summary = "로그인",
+      description =
+          "이메일과 비밀번호를 통해 사용자 로그인을 처리합니다.<br>"
+              + "응답으로 Access 토큰이 반환되며, Refresh 토큰은 HTTP-Only 쿠키로 자동 설정됩니다.<br>"
+              + "Access 토큰이 만료되면 '/api/user/refresh' 엔드포인트를 사용하여 갱신할 수 있습니다.")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "200", description = "로그인 성공"),
@@ -78,9 +88,47 @@ public class UserController {
   @PostMapping("/login")
   public ResponseEntity<LoginResponseDTO> login(
       @Parameter(description = "로그인 정보", required = true) @Valid @RequestBody
-          LoginRequestDTO.LoginRequest requestDTO) {
-    LoginResponseDTO response = authService.login(requestDTO.getUser());
-    return ResponseEntity.ok(response);
+          LoginRequestDTO.LoginRequest requestDTO,
+      HttpServletResponse response) {
+    LoginResponseDTO loginResponse = authService.login(requestDTO.getUser(), response);
+    return ResponseEntity.ok(loginResponse);
+  }
+
+  // 토큰 갱신 엔드포인트 추가
+  @Operation(
+      summary = "Access 토큰 갱신",
+      description =
+          "Refresh 토큰을 사용하여 새로운 Access 토큰을 발급받습니다. "
+              + "Refresh 토큰은 쿠키에서 자동으로 읽거나 요청 본문에서 제공할 수 있습니다.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(responseCode = "200", description = "토큰 갱신 성공"),
+        @ApiResponse(responseCode = "401", description = "유효하지 않은 Refresh 토큰")
+      })
+  @PostMapping("/refresh")
+  public ResponseEntity<LoginResponseDTO> refreshToken(
+      @CookieValue(name = "refresh_token", required = false) String refreshToken) {
+
+    if (refreshToken == null) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+    }
+
+    try {
+      LoginResponseDTO response = authService.refreshAccessToken(refreshToken);
+      return ResponseEntity.ok(response);
+    } catch (JwtAuthenticationException e) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+    }
+  }
+
+  // 로그아웃 엔드포인트 추가
+  @PostMapping("/logout")
+  public ResponseEntity<Void> logout(Authentication authentication, HttpServletResponse response) {
+
+    UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+    authService.logout(userDetails.getUsername(), response);
+
+    return ResponseEntity.ok().build();
   }
 
   @Operation(summary = "이메일 검증", description = "회원가입 시 입력한 이메일이 사용 가능한지 검증합니다.")

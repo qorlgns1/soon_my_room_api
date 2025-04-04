@@ -22,8 +22,11 @@ public class JwtUtil {
   @Value("${app.jwt.secret}")
   private String secret;
 
-  @Value("${app.jwt.expiration}")
-  private long expirationTime;
+  @Value("${app.jwt.access-token.expiration}")
+  private long accessTokenExpiration; // 짧게 설정 (예: 15분)
+
+  @Value("${app.jwt.refresh-token.expiration}")
+  private long refreshTokenExpiration; // 길게 설정 (예: 7일)
 
   @Getter private SecretKey signingKey;
 
@@ -33,16 +36,21 @@ public class JwtUtil {
     this.signingKey = Keys.hmacShaKeyFor(keyBytes);
   }
 
-  public String generateToken(User userDetails) {
-    return generateToken(new HashMap<>(), userDetails);
+  public String generateAccessToken(User userDetails) {
+    return generateToken(new HashMap<>(), userDetails, accessTokenExpiration);
   }
 
-  String generateToken(Map<String, Object> extraClaims, User userDetails) {
+  public String generateRefreshToken(User userDetails) {
+    return generateToken(new HashMap<>(), userDetails, refreshTokenExpiration);
+  }
+
+  // 토큰 생성 기능은 같으나 만료 시간을 파라미터로 받음
+  private String generateToken(Map<String, Object> extraClaims, User userDetails, long expiration) {
     return Jwts.builder()
         .subject(userDetails.getUsername())
         .claims(extraClaims)
         .issuedAt(new Date(System.currentTimeMillis()))
-        .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 24))
+        .expiration(new Date(System.currentTimeMillis() + expiration))
         .signWith(getSigningKey(), Jwts.SIG.HS512)
         .compact();
   }

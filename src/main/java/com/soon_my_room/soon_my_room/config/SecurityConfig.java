@@ -63,10 +63,11 @@ public class SecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(Arrays.asList("*")); // 모든 오리진 허용
+    configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));
     configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(
         Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
+    configuration.setAllowCredentials(true); // 쿠키 포함 요청 허용 (CORS with credentials)
     configuration.setMaxAge(3600L);
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);
@@ -124,6 +125,7 @@ public class SecurityConfig {
                         new AntPathRequestMatcher("/api/user/accountnamevalid"),
                         new AntPathRequestMatcher("/api/user/emailvalid"),
                         new AntPathRequestMatcher("/api/user/login"),
+                        new AntPathRequestMatcher("/api/user/refresh"),
                         new AntPathRequestMatcher("/api/user/checktoken"))
                     .permitAll()
                     // 나머지 API는 인증 필요

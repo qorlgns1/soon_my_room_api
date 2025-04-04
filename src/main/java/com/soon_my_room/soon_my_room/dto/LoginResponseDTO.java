@@ -41,4 +41,19 @@ public class LoginResponseDTO {
 
     return LoginResponseDTO.builder().user(userData).build();
   }
+
+  public static LoginResponseDTO fromEntity(User user, String token, String refreshToken) {
+    UserData userData =
+        UserData.builder()
+            .id(user.getId())
+            .username(user.getUsername())
+            .email(user.getEmail())
+            .accountname(user.getAccountname())
+            .intro(user.getIntro())
+            .image(user.getImage())
+            .token(token)
+            .build();
+
+    return LoginResponseDTO.builder().user(userData).build();
+  }
 }
