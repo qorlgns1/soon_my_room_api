@@ -2,7 +2,7 @@ name: CI/CD Pipeline for Soon My Room API
 
 on:
   push:
-    branches: [main, develop] # develop과 main 브랜치 push 시 실행
+    branches: [main, develop]
 
 jobs:
   build:
@@ -21,7 +21,7 @@ jobs:
 
       - name: Get Image Tag (Commit SHA)
         id: get_tag
-        run: echo "tag=${{ steps.get_branch.outputs.branch }}-${{ github.sha }}" >> $GITHUB_OUTPUT # 브랜치명-sha 조합
+        run: echo "tag=${{ steps.get_branch.outputs.branch }}-${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Create Sentry release
         uses: getsentry/action-release@v3
@@ -32,7 +32,7 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         with:
           environment: ${{ steps.get_branch.outputs.branch == 'main' && 'production' || 'development' }}
-          version: ${{ steps.get_tag.outputs.tag }} # 이미지 태그와 동일한 버전 사용
+          version: ${{ steps.get_tag.outputs.tag }}
 
       - name: Set up JDK 21
         uses: actions/setup-java@v3
@@ -80,7 +80,7 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/soon-my-room-api:${{ steps.get_tag.outputs.tag }}
           build-args: |
-            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }} # 빌드 시 필요하면 유지
+            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
 
   deploy:
     needs: build
@@ -146,7 +146,7 @@ jobs:
           username: ${{ env.EC2_USERNAME }}
           key: ${{ env.EC2_SSH_KEY }}
           source: "${{ env.ENV_FILE_NAME }}"
-          target: "${{ env.API_PROJECT_PATH }}/" # API 프로젝트 경로에 복사
+          target: "${{ env.API_PROJECT_PATH }}/"
 
       # 4. 공유 네트워크 및 Nginx 서비스 실행 보장 (Secrets, env 필요)
       - name: Ensure Shared Network and Nginx Service Running
@@ -197,7 +197,7 @@ jobs:
             GREEN_SERVICE="${SERVICE_PREFIX}-app-green"
             BLUE_PORT=${{ env.BLUE_PORT }}
             GREEN_PORT=${{ env.GREEN_PORT }}
-            APP_COMPOSE_FILE="${{ env.APP_COMPOSE_FILE }}" # 앱 컴포즈 파일
+            APP_COMPOSE_FILE="${{ env.APP_COMPOSE_FILE }}"
             REVERSE_PROXY_PATH="${{ env.REVERSE_PROXY_PATH }}"
 
             echo "--- Checking Deployment Status ---"
@@ -270,7 +270,7 @@ jobs:
             REVERSE_PROXY_PATH="${{ env.REVERSE_PROXY_PATH }}"
             APP_COMPOSE_FILE="${{ env.APP_COMPOSE_FILE }}"
             TARGET_SERVICE=${{ steps.check_status.outputs.target_service }}
-            export IMAGE_TAG=${{ env.IMAGE_TAG }} # Compose 파일 내 변수 사용
+            export IMAGE_TAG=${{ env.IMAGE_TAG }}
 
             cd $REVERSE_PROXY_PATH || { echo "Error: Failed to cd into $REVERSE_PROXY_PATH" >&2; exit 1; }
 
@@ -321,7 +321,8 @@ jobs:
               if [ $EXIT_CODE -eq 0 ]; then
                 echo "Attempt $i: Health check successful! (HTTP Status: $HTTP_CODE)"
                 echo "-----------------------------"
-                exit 0 # 성공
+                # 성공
+                exit 0 
               fi
               echo "Attempt $i: Health check failed (curl exit code: $EXIT_CODE). Retrying in $SLEEP_SECONDS seconds..."
               sleep $SLEEP_SECONDS
@@ -332,7 +333,8 @@ jobs:
             echo "Stopping failed container $TARGET_SERVICE..."
             cd $REVERSE_PROXY_PATH && docker-compose -f $APP_COMPOSE_FILE stop $TARGET_SERVICE
             echo "-----------------------------"
-            exit 1 # 실패
+            # 실패
+            exit 1
 
       # 8. Nginx 트래픽 전환 및 이전 버전 중지 (Secrets, env, check_status output 필요)
       - name: Switch Nginx and Stop Old Container
@@ -350,13 +352,13 @@ jobs:
             TARGET_SERVICE=${{ steps.check_status.outputs.target_service }}
             CURRENT_PORT=${{ steps.check_status.outputs.current_port }}
             TARGET_PORT=${{ steps.check_status.outputs.target_port }}
-            NGINX_SERVICE=${{ env.NGINX_SERVICE_NAME }}     # nginx-proxy
-            NGINX_COMPOSE_FILE=${{ env.NGINX_COMPOSE_FILE }} # docker-compose.nginx.yml
-            APP_COMPOSE_FILE=${{ env.APP_COMPOSE_FILE }}   # docker-compose.dev.yml 또는 prod.yml
+            NGINX_SERVICE=${{ env.NGINX_SERVICE_NAME }}
+            NGINX_COMPOSE_FILE=${{ env.NGINX_COMPOSE_FILE }}
+            APP_COMPOSE_FILE=${{ env.APP_COMPOSE_FILE }}
             REVERSE_PROXY_PATH="${{ env.REVERSE_PROXY_PATH }}"
             SERVICE_PREFIX="${{ env.SERVICE_PREFIX }}"
-            DEFAULT_BLUE_SERVICE="${SERVICE_PREFIX}-app-blue" # 첫 배포 시 기본값으로 가정
-            DEFAULT_BLUE_PORT=${{ env.BLUE_PORT }}           # 첫 배포 시 기본값으로 가정
+            DEFAULT_BLUE_SERVICE="${SERVICE_PREFIX}-app-blue"
+            DEFAULT_BLUE_PORT=${{ env.BLUE_PORT }}
 
             cd $REVERSE_PROXY_PATH || { echo "Error: Failed to cd into $REVERSE_PROXY_PATH" >&2; exit 1; }
 
@@ -383,7 +385,7 @@ jobs:
                 # sed 구분자를 #으로 변경하여 경로(/) 충돌 방지, 모든 발생 변경 (-i)
                 if ! sudo sed -i "s#${CURRENT_PROXY_PASS}#${TARGET_PROXY_PASS}#g" $NGINX_CONF_PATH; then
                   echo "Error: Failed to update proxy_pass using sed." >&2
-                  sudo mv $BACKUP_PATH $NGINX_CONF_PATH # 원복 시도
+                  sudo mv $BACKUP_PATH $NGINX_CONF_PATH
                   exit 1
                 fi
             else
@@ -392,7 +394,7 @@ jobs:
                 DEFAULT_PROXY_PASS="proxy_pass http://${DEFAULT_BLUE_SERVICE}:${DEFAULT_BLUE_PORT}"
                 if ! sudo sed -i "s#${DEFAULT_PROXY_PASS}#${TARGET_PROXY_PASS}#g" $NGINX_CONF_PATH; then
                    echo "Error: Failed to update default proxy_pass using sed." >&2
-                   sudo mv $BACKUP_PATH $NGINX_CONF_PATH # 원복 시도
+                   sudo mv $BACKUP_PATH $NGINX_CONF_PATH
                    exit 1
                 fi
             fi
@@ -407,7 +409,7 @@ jobs:
               if ! docker-compose -f $NGINX_COMPOSE_FILE exec -T $NGINX_SERVICE nginx -s reload; then
                  echo "Error: Failed to reload Nginx." >&2
                  echo "Rolling back Nginx configuration..."
-                 sudo mv $BACKUP_PATH $NGINX_CONF_PATH # 설정 원복
+                 sudo mv $BACKUP_PATH $NGINX_CONF_PATH
                  exit 1
               fi
               echo "Nginx reloaded successfully."
@@ -441,7 +443,7 @@ jobs:
               docker-compose -f $APP_COMPOSE_FILE rm -f $TARGET_SERVICE
               echo "Failed target container $TARGET_SERVICE processed."
               echo "-----------------------------"
-              exit 1 # 스텝 실패
+              exit 1
             fi
 
       # 9. 오래된 Docker 이미지 정리 (Secrets, env 필요)
