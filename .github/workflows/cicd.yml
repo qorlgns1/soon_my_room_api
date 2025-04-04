@@ -49,15 +49,14 @@ jobs:
       - name: Apply Spotless
         run: ./gradlew spotlessApply
 
-      # 의존성 새로고침도 함께 수행
-      - name: Clean Gradle Cache # 테스트 실행 전에 캐시 정리
+      - name: Clean Gradle Cache
         run: |
           rm -rf $HOME/.gradle/caches/
           ./gradlew clean --refresh-dependencies
 
       - name: Run tests
         env:
-          # 테스트 시 PostgreSQL 연결 정보 대신 H2 설정을 사용하도록 관련 환경 변수를 명시적으로 비워줍니다.
+          # 테스트 시 H2 사용 위한 환경 변수 비우기
           DB_URL: ""
           DB_USERNAME: ""
           DB_PASSWORD: ""
@@ -66,12 +65,14 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
+      # Docker Hub 로그인 (Secrets 필요)
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
+      # Docker 이미지 빌드 및 푸시 (Secrets 필요)
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
@@ -79,62 +80,65 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/soon-my-room-api:${{ steps.get_tag.outputs.tag }}
           build-args: |
-            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
+            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }} # 빌드 시 필요하면 유지
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    environment: ${{ needs.build.outputs.branch_name == 'main' && 'production' || 'development' }} # GitHub Environments 사용
+    # GitHub Environments 사용 (환경별 Secret 관리 용이)
+    environment: ${{ needs.build.outputs.branch_name == 'main' && 'production' || 'development' }}
     steps:
+      # 1. 환경 변수 설정 (브랜치 기반)
       - name: Set Environment Variables
         id: set_env
         run: |
+          EC2_BASE_WORKSPACE_PATH="/home/ubuntu/workspace" # EC2 프로젝트 기본 경로
           if [[ "${{ needs.build.outputs.branch_name }}" == "main" ]]; then
             echo "EC2_HOST=${{ secrets.EC2_HOST }}" >> $GITHUB_ENV
-            echo "EC2_USERNAME=${{ secrets.EC2_USERNAME }}" >> $GITHUB_ENV
-            # --- SSH 키 수정 시작 ---
+            echo "EC2_USERNAME=ubuntu" >> $GITHUB_ENV # ubuntu 사용자로 고정
             echo "EC2_SSH_KEY<<EOF" >> $GITHUB_ENV
             echo "${{ secrets.EC2_SSH_KEY }}" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
-            # --- SSH 키 수정 끝 ---
-            # --- .env 내용 수정 시작 ---
             echo "ENV_FILE_CONTENT<<EOF" >> $GITHUB_ENV
             echo "${{ secrets.PROD_ENV_FILE_CONTENT }}" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
-            # --- .env 내용 수정 끝 ---
             echo "ENV_FILE_NAME=.env.production.local" >> $GITHUB_ENV
-            echo "COMPOSE_FILE_NAME=docker-compose.prod.yml" >> $GITHUB_ENV
-            echo "NGINX_CONF_NAME=prod-soon-my-room.kihoonbae.store.conf" >> $GITHUB_ENV
-            echo "NGINX_SERVICE_NAME=nginx-prod" >> $GITHUB_ENV
+            echo "APP_COMPOSE_FILE=docker-compose.prod.yml" >> $GITHUB_ENV # 앱 컴포즈 파일
+            echo "NGINX_CONF_NAME=prod-soon-my-room.kihoonbae.store.conf" >> $GITHUB_ENV # Nginx 설정 파일
             echo "SERVICE_PREFIX=prod" >> $GITHUB_ENV
             echo "BLUE_PORT=9000" >> $GITHUB_ENV
             echo "GREEN_PORT=9001" >> $GITHUB_ENV
           else # develop branch
-            echo "EC2_HOST=${{ secrets.EC2_HOST }}" >> $GITHUB_ENV # develop용 Secret 사용 필요 시 secrets.DEV_EC2_HOST 등으로 변경
-            echo "EC2_USERNAME=${{ secrets.EC2_USERNAME }}" >> $GITHUB_ENV # develop용 Secret 사용 필요 시 secrets.DEV_EC2_USERNAME 등으로 변경
-            # --- SSH 키 수정 시작 ---
+            echo "EC2_HOST=${{ secrets.EC2_HOST }}" >> $GITHUB_ENV
+            echo "EC2_USERNAME=${{ secrets.EC2_USERNAME }}"" >> $GITHUB_ENV
             echo "EC2_SSH_KEY<<EOF" >> $GITHUB_ENV
-            echo "${{ secrets.EC2_SSH_KEY }}" >> $GITHUB_ENV # develop용 Secret 사용 필요 시 secrets.DEV_EC2_SSH_KEY 등으로 변경
+            echo "${{ secrets.EC2_SSH_KEY }}" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
-            # --- SSH 키 수정 끝 ---
-            # --- .env 내용 수정 시작 ---
             echo "ENV_FILE_CONTENT<<EOF" >> $GITHUB_ENV
             echo "${{ secrets.DEV_ENV_FILE_CONTENT }}" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
-            # --- .env 내용 수정 끝 ---
             echo "ENV_FILE_NAME=.env.development.local" >> $GITHUB_ENV
-            echo "COMPOSE_FILE_NAME=docker-compose.dev.yml" >> $GITHUB_ENV
-            echo "NGINX_CONF_NAME=dev-soon-my-room.kihoonbae.store.conf" >> $GITHUB_ENV
-            echo "NGINX_SERVICE_NAME=nginx-dev" >> $GITHUB_ENV
+            echo "APP_COMPOSE_FILE=docker-compose.dev.yml" >> $GITHUB_ENV # 앱 컴포즈 파일
+            echo "NGINX_CONF_NAME=dev-soon-my-room.kihoonbae.store.conf" >> $GITHUB_ENV # Nginx 설정 파일
             echo "SERVICE_PREFIX=dev" >> $GITHUB_ENV
             echo "BLUE_PORT=8000" >> $GITHUB_ENV
             echo "GREEN_PORT=8001" >> $GITHUB_ENV
           fi
+          # 공통 변수
           echo "IMAGE_TAG=${{ needs.build.outputs.image_tag }}" >> $GITHUB_ENV
+          echo "EC2_PROJECT_PATH=$EC2_BASE_WORKSPACE_PATH" >> $GITHUB_ENV # .env 복사 및 스크립트에서 사용
+          echo "REVERSE_PROXY_PATH=$EC2_BASE_WORKSPACE_PATH/reverse-proxy" >> $GITHUB_ENV # 스크립트에서 사용
+          echo "API_PROJECT_PATH=$EC2_BASE_WORKSPACE_PATH/soon_my_room_api" >> $GITHUB_ENV # .env 복사 시 사용
+          echo "NGINX_COMPOSE_FILE=docker-compose.nginx.yml" >> $GITHUB_ENV # Nginx 컴포즈 파일 이름
+          echo "NGINX_SERVICE_NAME=nginx-proxy" >> $GITHUB_ENV # 통합된 Nginx 서비스 이름
+          echo "SHARED_NETWORK_NAME=soon-my-room-network" >> $GITHUB_ENV # 공유 네트워크 이름
+          echo "HEALTH_CHECK_ENDPOINT=/swagger-ui/index.html" >> $GITHUB_ENV # 헬스 체크 경로
 
+      # 2. .env 파일 로컬 생성
       - name: Create .env file locally
         run: echo "${{ env.ENV_FILE_CONTENT }}" > ${{ env.ENV_FILE_NAME }}
 
+      # 3. .env 파일 EC2에 복사 (Secrets, env 필요)
       - name: Copy env file to EC2
         uses: appleboy/scp-action@master
         with:
@@ -142,9 +146,43 @@ jobs:
           username: ${{ env.EC2_USERNAME }}
           key: ${{ env.EC2_SSH_KEY }}
           source: "${{ env.ENV_FILE_NAME }}"
-          target: "~/workspace/soon_my_room_api/"
+          target: "${{ env.API_PROJECT_PATH }}/" # API 프로젝트 경로에 복사
 
-      - name: Check current deployment status
+      # 4. 공유 네트워크 및 Nginx 서비스 실행 보장 (Secrets, env 필요)
+      - name: Ensure Shared Network and Nginx Service Running
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ env.EC2_SSH_KEY }}
+          script: |
+            REVERSE_PROXY_PATH="${{ env.REVERSE_PROXY_PATH }}"
+            NGINX_COMPOSE_FILE="${{ env.NGINX_COMPOSE_FILE }}"
+
+            cd $REVERSE_PROXY_PATH || { echo "Error: Failed to cd into $REVERSE_PROXY_PATH" >&2; exit 1; }
+
+            echo "--- Ensuring Nginx and Network ---"
+            # docker-compose 명령어 확인
+            if ! command -v docker-compose &> /dev/null; then
+                echo "Error: docker-compose command not found." >&2
+                exit 1
+            fi
+            # Nginx 컴포즈 파일 확인
+            if [ ! -f "$NGINX_COMPOSE_FILE" ]; then
+                echo "Error: Nginx compose file '$NGINX_COMPOSE_FILE' not found in $REVERSE_PROXY_PATH" >&2
+                exit 1
+            fi
+
+            # 네트워크와 Nginx 컨테이너 실행/생성 (멱등성 보장)
+            if ! docker-compose -f $NGINX_COMPOSE_FILE up -d --remove-orphans; then
+              echo "Error: Failed to start Nginx service using $NGINX_COMPOSE_FILE" >&2
+              exit 1
+            fi
+            echo "Nginx service and network are up."
+            echo "---------------------------------"
+
+      # 5. 현재 배포 상태 확인 및 Target 결정 (Secrets, env 필요)
+      - name: Check Deployment Status and Determine Target
         id: check_status
         uses: appleboy/ssh-action@master
         with:
@@ -152,71 +190,113 @@ jobs:
           username: ${{ env.EC2_USERNAME }}
           key: ${{ env.EC2_SSH_KEY }}
           script: |
-            NGINX_CONF_PATH="/home/ubuntu/workspace/reverse-proxy/nginx/conf.d/${{ env.NGINX_CONF_NAME }}" 
+            # 환경 변수 설정 (Actions에서 전달)
+            NGINX_CONF_PATH="${{ env.REVERSE_PROXY_PATH }}/nginx/conf.d/${{ env.NGINX_CONF_NAME }}"
             SERVICE_PREFIX="${{ env.SERVICE_PREFIX }}"
             BLUE_SERVICE="${SERVICE_PREFIX}-app-blue"
             GREEN_SERVICE="${SERVICE_PREFIX}-app-green"
+            BLUE_PORT=${{ env.BLUE_PORT }}
+            GREEN_PORT=${{ env.GREEN_PORT }}
+            APP_COMPOSE_FILE="${{ env.APP_COMPOSE_FILE }}" # 앱 컴포즈 파일
+            REVERSE_PROXY_PATH="${{ env.REVERSE_PROXY_PATH }}"
 
-            # 현재 Nginx가 바라보는 서비스 확인 (Blue를 기본으로 가정)
-            CURRENT_SERVICE=$BLUE_SERVICE
-            TARGET_SERVICE=$GREEN_SERVICE
-            CURRENT_PORT=${{ env.BLUE_PORT }}
-            TARGET_PORT=${{ env.GREEN_PORT }}
+            echo "--- Checking Deployment Status ---"
+            echo "Checking Nginx Conf: $NGINX_CONF_PATH"
+            echo "Using App Compose File: $APP_COMPOSE_FILE"
 
-            # 파일 존재 여부 확인 후 grep 실행 (오류 방지)
-            if [ -f "$NGINX_CONF_PATH" ] && grep -q "proxy_pass http://${GREEN_SERVICE}:9000" "$NGINX_CONF_PATH"; then
-              CURRENT_SERVICE=$GREEN_SERVICE
-              TARGET_SERVICE=$BLUE_SERVICE
-              CURRENT_PORT=${{ env.GREEN_PORT }}
-              TARGET_PORT=${{ env.BLUE_PORT }}
-            elif [ ! -f "$NGINX_CONF_PATH" ]; then
-               echo "Error: Nginx conf file not found at $NGINX_CONF_PATH"
-               exit 1 # 파일 없으면 스텝 실패 처리
+            cd $REVERSE_PROXY_PATH || { echo "Error: Failed to cd into $REVERSE_PROXY_PATH" >&2; exit 1; }
+
+            # 기본값 설정
+            CURRENT_SERVICE="none"
+            CURRENT_PORT="none"
+            TARGET_SERVICE=$BLUE_SERVICE
+            TARGET_PORT=$BLUE_PORT
+
+            # 앱 컴포즈 파일 확인
+            if [ ! -f "$APP_COMPOSE_FILE" ]; then
+                echo "Error: Application compose file '$APP_COMPOSE_FILE' not found." >&2
+                exit 1
             fi
 
+            # 현재 실행 중인 앱 컨테이너 ID 확인
+            RUNNING_BLUE_ID=$(docker-compose -f $APP_COMPOSE_FILE ps -q $BLUE_SERVICE 2>/dev/null || echo "")
+            RUNNING_GREEN_ID=$(docker-compose -f $APP_COMPOSE_FILE ps -q $GREEN_SERVICE 2>/dev/null || echo "")
+            echo "Running Blue App Container ID: '$RUNNING_BLUE_ID'"
+            echo "Running Green App Container ID: '$RUNNING_GREEN_ID'"
+
+            # Nginx 설정 파일 확인 및 상태 판별
+            if [ -f "$NGINX_CONF_PATH" ]; then
+                echo "Nginx config file found."
+                # Green을 가리키고 Green 컨테이너가 실행 중이면 Green이 현재 활성
+                if grep -q "proxy_pass http://${GREEN_SERVICE}:${GREEN_PORT}" "$NGINX_CONF_PATH" && [ ! -z "$RUNNING_GREEN_ID" ]; then
+                    echo "Status: Active service is GREEN."
+                    CURRENT_SERVICE=$GREEN_SERVICE
+                    CURRENT_PORT=$GREEN_PORT
+                    TARGET_SERVICE=$BLUE_SERVICE
+                    TARGET_PORT=$BLUE_PORT
+                # Blue를 가리키고 Blue 컨테이너가 실행 중이면 Blue가 현재 활성
+                elif grep -q "proxy_pass http://${BLUE_SERVICE}:${BLUE_PORT}" "$NGINX_CONF_PATH" && [ ! -z "$RUNNING_BLUE_ID" ]; then
+                    echo "Status: Active service is BLUE."
+                    CURRENT_SERVICE=$BLUE_SERVICE
+                    CURRENT_PORT=$BLUE_PORT
+                    TARGET_SERVICE=$GREEN_SERVICE
+                    TARGET_PORT=$GREEN_PORT
+                else
+                    echo "Warning: Cannot reliably determine active service from Nginx config and running containers. Defaulting to target BLUE." >&2
+                fi
+            else
+                echo "Info: Nginx config file not found. Assuming initial deployment. Targeting BLUE."
+            fi
+
+            echo "--- Determined Status ---"
             echo "Current Service: $CURRENT_SERVICE (Port: $CURRENT_PORT)"
             echo "Target Service: $TARGET_SERVICE (Port: $TARGET_PORT)"
+            echo "-------------------------"
 
-            echo "current_service=${CURRENT_SERVICE}"
-            echo "target_service=${TARGET_SERVICE}"
-            echo "current_port=${CURRENT_PORT}"
-            echo "target_port=${TARGET_PORT}"
+            # 결과 전달 (::set-output 사용)
+            echo "::set-output name=current_service::$CURRENT_SERVICE"
+            echo "::set-output name=target_service::$TARGET_SERVICE"
+            echo "::set-output name=current_port::$CURRENT_PORT"
+            echo "::set-output name=target_port::$TARGET_PORT"
 
-      - name: Parse deployment status output # 새로운 스텝 추가
-        id: parse_status
-        run: |
-          echo "${{ steps.check_status.outputs.stdout }}" | grep '^current_service=' >> $GITHUB_ENV
-          echo "${{ steps.check_status.outputs.stdout }}" | grep '^target_service=' >> $GITHUB_ENV
-          echo "${{ steps.check_status.outputs.stdout }}" | grep '^current_port=' >> $GITHUB_ENV
-          echo "${{ steps.check_status.outputs.stdout }}" | grep '^target_port=' >> $GITHUB_ENV
-          # GITHUB_ENV 에 잘 설정되었는지 확인 (디버깅용)
-          echo "--- Parsed Environment Variables ---"
-          echo "CURRENT_SERVICE=${{ env.CURRENT_SERVICE }}"
-          echo "TARGET_SERVICE=${{ env.TARGET_SERVICE }}"
-          echo "CURRENT_PORT=${{ env.CURRENT_PORT }}"
-          echo "TARGET_PORT=${{ env.TARGET_PORT }}"
-          echo "-----------------------------------"
-
-      - name: Deploy new version
+      # 6. 새 버전 앱 배포 (Secrets, env, check_status output 필요)
+      - name: Deploy New Application Version
         uses: appleboy/ssh-action@master
         with:
           host: ${{ env.EC2_HOST }}
           username: ${{ env.EC2_USERNAME }}
           key: ${{ env.EC2_SSH_KEY }}
           script: |
-            cd ~/workspace/reverse-proxy
-            export IMAGE_TAG=${{ env.IMAGE_TAG }} # Docker Compose 파일 내 변수 사용 위함
+            REVERSE_PROXY_PATH="${{ env.REVERSE_PROXY_PATH }}"
+            APP_COMPOSE_FILE="${{ env.APP_COMPOSE_FILE }}"
             TARGET_SERVICE=${{ steps.check_status.outputs.target_service }}
+            export IMAGE_TAG=${{ env.IMAGE_TAG }} # Compose 파일 내 변수 사용
 
-            echo "Pulling new image: $IMAGE_TAG"
-            docker-compose -f ${{ env.COMPOSE_FILE_NAME }} pull $TARGET_SERVICE
+            cd $REVERSE_PROXY_PATH || { echo "Error: Failed to cd into $REVERSE_PROXY_PATH" >&2; exit 1; }
 
-            echo "Starting new container: $TARGET_SERVICE"
-            docker-compose -f ${{ env.COMPOSE_FILE_NAME }} up -d --no-deps $TARGET_SERVICE
+            echo "--- Deploying New Application Version ---"
+            echo "Target Service: $TARGET_SERVICE"
+            echo "Image Tag: $IMAGE_TAG"
+            echo "Using Compose File: $APP_COMPOSE_FILE"
 
-            echo "New container started. Waiting for health check..."
+            echo "Pulling new image for $TARGET_SERVICE..."
+            if ! docker-compose -f $APP_COMPOSE_FILE pull $TARGET_SERVICE; then
+              echo "Error: Failed to pull image for $TARGET_SERVICE" >&2
+              exit 1
+            fi
+            echo "Image pull successful."
 
-      - name: Health check
+            echo "Starting new container for $TARGET_SERVICE..."
+            # --force-recreate: 기존 컨테이너 강제 재생성
+            if ! docker-compose -f $APP_COMPOSE_FILE up -d --no-deps --force-recreate $TARGET_SERVICE; then
+              echo "Error: Failed to start container for $TARGET_SERVICE" >&2
+              exit 1
+            fi
+            echo "Container deployment initiated for $TARGET_SERVICE."
+            echo "---------------------------------------"
+
+      # 7. 헬스 체크 (Secrets, env, check_status output 필요)
+      - name: Health Check New Application Version
         uses: appleboy/ssh-action@master
         with:
           host: ${{ env.EC2_HOST }}
@@ -224,20 +304,38 @@ jobs:
           key: ${{ env.EC2_SSH_KEY }}
           script: |
             TARGET_PORT=${{ steps.check_status.outputs.target_port }}
-            echo "Performing health check on port $TARGET_PORT..."
-            for i in {1..30}; do
-              HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$TARGET_PORT/swagger-ui/index.html)
-              if [ "$HEALTH_CHECK" == "200" ]; then
-                echo "Health check successful!"
-                exit 0
-              fi
-              echo "Health check attempt $i failed with status $HEALTH_CHECK. Retrying in 2 seconds..."
-              sleep 2
-            done
-            echo "Health check failed after 30 attempts."
-            exit 1
+            HEALTH_ENDPOINT="${{ env.HEALTH_CHECK_ENDPOINT }}"
+            MAX_ATTEMPTS=30
+            SLEEP_SECONDS=2
+            REVERSE_PROXY_PATH="${{ env.REVERSE_PROXY_PATH }}"
+            APP_COMPOSE_FILE="${{ env.APP_COMPOSE_FILE }}"
+            TARGET_SERVICE=${{ steps.check_status.outputs.target_service }}
 
-      - name: Switch Nginx and stop old container
+            echo "--- Performing Health Check ---"
+            echo "Checking endpoint: http://localhost:$TARGET_PORT$HEALTH_ENDPOINT"
+
+            for i in $(seq 1 $MAX_ATTEMPTS); do
+              HTTP_CODE=$(curl --connect-timeout 5 --fail -s -o /dev/null -w "%{http_code}" http://localhost:$TARGET_PORT$HEALTH_ENDPOINT)
+              EXIT_CODE=$?
+
+              if [ $EXIT_CODE -eq 0 ]; then
+                echo "Attempt $i: Health check successful! (HTTP Status: $HTTP_CODE)"
+                echo "-----------------------------"
+                exit 0 # 성공
+              fi
+              echo "Attempt $i: Health check failed (curl exit code: $EXIT_CODE). Retrying in $SLEEP_SECONDS seconds..."
+              sleep $SLEEP_SECONDS
+            done
+
+            echo "Error: Health check failed after $MAX_ATTEMPTS attempts." >&2
+            # 실패 시 새로 띄운 앱 컨테이너 중지
+            echo "Stopping failed container $TARGET_SERVICE..."
+            cd $REVERSE_PROXY_PATH && docker-compose -f $APP_COMPOSE_FILE stop $TARGET_SERVICE
+            echo "-----------------------------"
+            exit 1 # 실패
+
+      # 8. Nginx 트래픽 전환 및 이전 버전 중지 (Secrets, env, check_status output 필요)
+      - name: Switch Nginx and Stop Old Container
         # 헬스 체크 성공 시에만 실행
         if: success()
         uses: appleboy/ssh-action@master
@@ -246,39 +344,109 @@ jobs:
           username: ${{ env.EC2_USERNAME }}
           key: ${{ env.EC2_SSH_KEY }}
           script: |
-            NGINX_CONF_PATH="~/workspace/reverse-proxy/nginx/conf.d/${{ env.NGINX_CONF_NAME }}"
+            # 환경 변수 및 이전 스텝 output 사용
+            NGINX_CONF_PATH="${{ env.REVERSE_PROXY_PATH }}/nginx/conf.d/${{ env.NGINX_CONF_NAME }}"
             CURRENT_SERVICE=${{ steps.check_status.outputs.current_service }}
             TARGET_SERVICE=${{ steps.check_status.outputs.target_service }}
-            NGINX_SERVICE=${{ env.NGINX_SERVICE_NAME }}
-            COMPOSE_FILE=${{ env.COMPOSE_FILE_NAME }}
-            WORKSPACE_DIR="~/workspace/reverse-proxy"
+            CURRENT_PORT=${{ steps.check_status.outputs.current_port }}
+            TARGET_PORT=${{ steps.check_status.outputs.target_port }}
+            NGINX_SERVICE=${{ env.NGINX_SERVICE_NAME }}     # nginx-proxy
+            NGINX_COMPOSE_FILE=${{ env.NGINX_COMPOSE_FILE }} # docker-compose.nginx.yml
+            APP_COMPOSE_FILE=${{ env.APP_COMPOSE_FILE }}   # docker-compose.dev.yml 또는 prod.yml
+            REVERSE_PROXY_PATH="${{ env.REVERSE_PROXY_PATH }}"
+            SERVICE_PREFIX="${{ env.SERVICE_PREFIX }}"
+            DEFAULT_BLUE_SERVICE="${SERVICE_PREFIX}-app-blue" # 첫 배포 시 기본값으로 가정
+            DEFAULT_BLUE_PORT=${{ env.BLUE_PORT }}           # 첫 배포 시 기본값으로 가정
 
-            echo "Switching Nginx to target service: $TARGET_SERVICE"
-            sudo cp $NGINX_CONF_PATH ${NGINX_CONF_PATH}.backup
+            cd $REVERSE_PROXY_PATH || { echo "Error: Failed to cd into $REVERSE_PROXY_PATH" >&2; exit 1; }
 
-            # proxy_pass 를 TARGET 서비스 이름으로 변경
-            sudo sed -i "s|proxy_pass http://${CURRENT_SERVICE}:9000|proxy_pass http://${TARGET_SERVICE}:9000|g" $NGINX_CONF_PATH
+            echo "--- Switching Nginx Traffic ---"
+            echo "Target Service: $TARGET_SERVICE (Port: $TARGET_PORT)"
 
-            echo "Testing Nginx configuration..."
-            cd $WORKSPACE_DIR
-            if docker-compose -f $COMPOSE_FILE exec $NGINX_SERVICE nginx -t; then
-              echo "Nginx configuration test successful. Reloading Nginx..."
-              docker-compose -f $COMPOSE_FILE exec $NGINX_SERVICE nginx -s reload
-
-              echo "Traffic switched to $TARGET_SERVICE. Stopping old container $CURRENT_SERVICE after 30 seconds..."
-              sleep 30
-              docker-compose -f $COMPOSE_FILE stop $CURRENT_SERVICE
-              echo "Old container $CURRENT_SERVICE stopped."
-            else
-              echo "Nginx configuration test failed. Rolling back changes..."
-              sudo mv ${NGINX_CONF_PATH}.backup $NGINX_CONF_PATH
-              echo "Stopping target container $TARGET_SERVICE due to failed Nginx test."
-              docker-compose -f $COMPOSE_FILE stop $TARGET_SERVICE
-              docker-compose -f $COMPOSE_FILE rm -f $TARGET_SERVICE # 실패한 컨테이너 삭제
+            # Nginx 설정 파일 존재 확인
+            if [ ! -f "$NGINX_CONF_PATH" ]; then
+              echo "Error: Nginx config file $NGINX_CONF_PATH not found!" >&2
+              # 필요하다면 여기서 기본 설정 파일 생성 로직 추가 가능
               exit 1
             fi
 
-      - name: Clean up old images # 항상 실행되도록 수정
+            # 설정 변경 전 백업
+            BACKUP_PATH="${NGINX_CONF_PATH}.backup.$(date +%s)"
+            echo "Backing up Nginx config to $BACKUP_PATH"
+            sudo cp $NGINX_CONF_PATH $BACKUP_PATH
+
+            # proxy_pass 변경 (주의: 실제 설정 파일 내용에 맞게 sed 패턴 조정 필요)
+            TARGET_PROXY_PASS="proxy_pass http://${TARGET_SERVICE}:${TARGET_PORT}"
+            if [ "$CURRENT_SERVICE" != "none" ]; then
+                echo "Updating Nginx: $CURRENT_SERVICE:$CURRENT_PORT -> $TARGET_SERVICE:$TARGET_PORT"
+                CURRENT_PROXY_PASS="proxy_pass http://${CURRENT_SERVICE}:${CURRENT_PORT}"
+                # sed 구분자를 #으로 변경하여 경로(/) 충돌 방지, 모든 발생 변경 (-i)
+                if ! sudo sed -i "s#${CURRENT_PROXY_PASS}#${TARGET_PROXY_PASS}#g" $NGINX_CONF_PATH; then
+                  echo "Error: Failed to update proxy_pass using sed." >&2
+                  sudo mv $BACKUP_PATH $NGINX_CONF_PATH # 원복 시도
+                  exit 1
+                fi
+            else
+                # 첫 배포: 기본 설정(Blue 가정)을 Target으로 변경
+                echo "Initial deployment: Updating default Nginx config to point to $TARGET_SERVICE:$TARGET_PORT"
+                DEFAULT_PROXY_PASS="proxy_pass http://${DEFAULT_BLUE_SERVICE}:${DEFAULT_BLUE_PORT}"
+                if ! sudo sed -i "s#${DEFAULT_PROXY_PASS}#${TARGET_PROXY_PASS}#g" $NGINX_CONF_PATH; then
+                   echo "Error: Failed to update default proxy_pass using sed." >&2
+                   sudo mv $BACKUP_PATH $NGINX_CONF_PATH # 원복 시도
+                   exit 1
+                fi
+            fi
+            echo "Nginx config file updated."
+
+            echo "Testing Nginx configuration..."
+            # Nginx 컴포즈 파일과 서비스 이름 사용
+            if docker-compose -f $NGINX_COMPOSE_FILE exec -T $NGINX_SERVICE nginx -t; then
+              echo "Nginx configuration test successful."
+
+              echo "Reloading Nginx..."
+              if ! docker-compose -f $NGINX_COMPOSE_FILE exec -T $NGINX_SERVICE nginx -s reload; then
+                 echo "Error: Failed to reload Nginx." >&2
+                 echo "Rolling back Nginx configuration..."
+                 sudo mv $BACKUP_PATH $NGINX_CONF_PATH # 설정 원복
+                 exit 1
+              fi
+              echo "Nginx reloaded successfully."
+
+              # 성공 시 백업 파일 삭제 (선택적)
+              # sudo rm $BACKUP_PATH
+
+              # 이전 버전 앱 컨테이너 중지 (첫 배포가 아닐 경우 앱 컴포즈 파일 사용)
+              if [ "$CURRENT_SERVICE" != "none" ]; then
+                echo "Stopping old container $CURRENT_SERVICE after 30 seconds delay..."
+                sleep 30
+                if ! docker-compose -f $APP_COMPOSE_FILE stop $CURRENT_SERVICE; then
+                  echo "Warning: Failed to stop old container $CURRENT_SERVICE. Please check manually." >&2
+                  # 실패해도 워크플로우는 성공으로 간주할 수 있음 (트래픽은 전환됨)
+                else
+                  echo "Old container $CURRENT_SERVICE stopped."
+                fi
+              else
+                echo "Initial deployment completed. No old container to stop."
+              fi
+              echo "-----------------------------"
+            else
+              echo "Error: Nginx configuration test failed!" >&2
+              echo "Rolling back Nginx configuration..."
+              sudo mv $BACKUP_PATH $NGINX_CONF_PATH
+              echo "Nginx configuration restored."
+
+              # 실패 시 Target 앱 컨테이너 중지/삭제 (앱 컴포즈 파일 사용)
+              echo "Stopping and removing failed target container $TARGET_SERVICE..."
+              docker-compose -f $APP_COMPOSE_FILE stop $TARGET_SERVICE
+              docker-compose -f $APP_COMPOSE_FILE rm -f $TARGET_SERVICE
+              echo "Failed target container $TARGET_SERVICE processed."
+              echo "-----------------------------"
+              exit 1 # 스텝 실패
+            fi
+
+      # 9. 오래된 Docker 이미지 정리 (Secrets, env 필요)
+      - name: Clean Up Old Docker Images
+        # 항상 실행
         if: always()
         uses: appleboy/ssh-action@master
         with:
@@ -286,5 +454,7 @@ jobs:
           username: ${{ env.EC2_USERNAME }}
           key: ${{ env.EC2_SSH_KEY }}
           script: |
-            echo "Cleaning up old docker images..."
+            echo "--- Cleaning up old docker images ---"
+            # 사용되지 않는 이미지 중 7일(168시간) 이상된 이미지 삭제
             docker image prune -af --filter "until=168h"
+            echo "-----------------------------------"
