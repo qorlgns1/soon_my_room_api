@@ -2,12 +2,18 @@ version: "3.8"
 
 services:
   app:
-    image: soon-my-room-api:dev-latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - SERVER_PORT=${SERVER_PORT:-8000}
     container_name: soon-my-room-api-dev
     ports:
-      - "9000:9000"
+      - "${SERVER_PORT:-8000}:${SERVER_PORT:-8000}"
     env_file:
       - .env
+    environment:
+      - SERVER_PORT=${SERVER_PORT:-8000}
     volumes:
       - ./logs:/app/logs
     restart: unless-stopped

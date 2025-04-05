@@ -6,6 +6,10 @@ WORKDIR /app
 ARG SENTRY_AUTH_TOKEN # GitHub Actions의 build-args에서 값을 받습니다.
 ENV SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN} 
 
+# 포트 환경 변수 설정 (기본값: 9000)
+ARG SERVER_PORT=9000
+ENV SERVER_PORT=${SERVER_PORT}
+
 # 그래들 파일 복사 (레이어 캐싱 활용을 위해)
 COPY gradlew .
 COPY gradle gradle
@@ -34,7 +38,7 @@ WORKDIR /app
 COPY --from=build /app/build/libs/*.jar app.jar
 
 # 포트 노출
-EXPOSE 9000
+EXPOSE ${SERVER_PORT}
 
 # 실행 명령어
 ENTRYPOINT ["java", "-jar", "app.jar"]
