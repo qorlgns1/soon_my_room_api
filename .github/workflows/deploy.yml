@@ -47,13 +47,6 @@ jobs:
             fi
           done < .env
 
-      # SENTRY_ORG, SENTRY_PROJECT, SENTRY_DSN 환경 변수 값을 로그로 확인
-      - name: Check Sentry environment variables
-        run: |
-          echo "SENTRY_ORG: ${{ secrets.SENTRY_ORG }}"
-          echo "SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}"
-          echo "SENTRY_DSN: ${{ secrets.SENTRY_DSN }}"
-
       - name: Create Sentry release
         uses: getsentry/action-release@v3
         env:
@@ -64,6 +57,7 @@ jobs:
         with:
           environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
           release: ${{ github.sha }}
+          ignore_missing: true
 
       - name: Set up JDK 21
         uses: actions/setup-java@v3
