@@ -264,41 +264,47 @@ jobs:
             } > "$TEMP_STATUS_FILE"
             echo "Status file created."
 
-      # 6. EC2에서 Docker Hub 로그인 및 즉시 검증
-      - name: Log in to Docker Hub and Verify on EC2
+      # 6. EC2 로그인, 새 버전 앱 배포 (통합 스텝)
+      - name: Login EC2, Deploy New Application Version
         uses: appleboy/ssh-action@master
         with:
           host: ${{ env.EC2_HOST }}
           username: ${{ env.EC2_USERNAME }}
           key: ${{ env.EC2_SSH_KEY }}
           script: |
+            # --- 1. 로그인 ---
             echo "Logging into Docker Hub on EC2..."
             if ! docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin <<< "${{ secrets.DOCKER_HUB_TOKEN }}"; then
               echo "Error: Docker login failed on EC2." >&2
               exit 1
             fi
-            echo "Docker login command executed on EC2."
+            echo "Docker login successful on EC2."
 
-            # --- 로그인 직후 검증 추가 ---
-            echo "Verifying login by attempting to pull the target image immediately..."
-            # 현재 빌드된 이미지 태그 사용
-            VERIFY_IMAGE="${{ secrets.DOCKER_HUB_USERNAME }}/soon-my-room-api:${{ env.IMAGE_TAG }}"
-            echo "Attempting to pull: $VERIFY_IMAGE"
+            # --- 2. 배포 로직 (기존 Deploy 스텝 스크립트 내용) ---
+            REVERSE_PROXY_PATH="${{ env.REVERSE_PROXY_PATH }}"
+            APP_COMPOSE_FILE="${{ env.APP_COMPOSE_FILE }}"
+            export IMAGE_TAG="${{ env.IMAGE_TAG }}"
+            TEMP_STATUS_FILE="${{ env.EC2_TEMP_STATUS_FILE }}"
 
-            if ! docker pull "$VERIFY_IMAGE"; then
-                echo "Error: Failed to pull target image '$VERIFY_IMAGE' immediately after login within the same SSH session." >&2
-                # 로그인 설정 파일 내용 확인 (디버깅 목적)
-                echo "--- Debug: Docker Config ---"
-                cat /home/ubuntu/.docker/config.json || echo "Debug: config.json not found or unreadable."
-                echo "--- End Debug ---"
-                exit 1 # 검증 실패 시 워크플로우 중단
-            else
-              echo "Successfully pulled target image '$VERIFY_IMAGE' immediately after login."
-              # 검증용으로 받은 이미지 삭제 (선택적)
-              docker rmi "$VERIFY_IMAGE" || echo "Warning: Failed to remove verification image"
-            fi
-            echo "Docker login verification completed successfully."
-            # --- 검증 끝 ---
+            # 임시 파일 로드
+            if [[ -f "$TEMP_STATUS_FILE" ]]; then source "$TEMP_STATUS_FILE"; else echo "Error: Status file $TEMP_STATUS_FILE not found!" >&2; exit 1; fi
+            if [ -z "$TARGET_SERVICE" ]; then echo "Error: TARGET_SERVICE is empty after loading!" >&2; exit 1; fi
+
+            cd $REVERSE_PROXY_PATH || { echo "Error: Failed to cd into $REVERSE_PROXY_PATH" >&2; exit 1; }
+
+            echo "--- Deploying New Application Version ---"
+            echo "Target Service: $TARGET_SERVICE"
+            echo "Image Tag: $IMAGE_TAG"
+
+            echo "Pulling new image for $TARGET_SERVICE..."
+            # 이제 로그인이 된 상태이므로 성공해야 함
+            if ! docker-compose -f $APP_COMPOSE_FILE pull $TARGET_SERVICE; then echo "Error: Failed to pull image for $TARGET_SERVICE" >&2; exit 1; fi
+            echo "Image pull successful."
+
+            echo "Starting new container for $TARGET_SERVICE..."
+            if ! docker-compose -f $APP_COMPOSE_FILE up -d --no-deps --force-recreate $TARGET_SERVICE; then echo "Error: Failed to start container for $TARGET_SERVICE" >&2; exit 1; fi
+            echo "Container deployment initiated."
+            echo "---------------------------------------"
 
       # 7. 새 버전 앱 배포 (EC2 임시 파일 직접 참조)
       - name: Deploy New Application Version
