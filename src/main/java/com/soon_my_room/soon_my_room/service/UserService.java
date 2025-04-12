@@ -3,7 +3,6 @@ package com.soon_my_room.soon_my_room.service;
 import com.soon_my_room.soon_my_room.dto.ProfileDTO;
 import com.soon_my_room.soon_my_room.dto.UserRequestDTO;
 import com.soon_my_room.soon_my_room.dto.UserResponseDTO;
-import com.soon_my_room.soon_my_room.exception.DuplicateResourceException;
 import com.soon_my_room.soon_my_room.exception.ResourceNotFoundException;
 import com.soon_my_room.soon_my_room.model.User;
 import com.soon_my_room.soon_my_room.repository.FollowRepository;
@@ -15,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/** 사용자 핵심 서비스 사용자 등록, 정보 조회, 프로필 업데이트 기능을 담당합니다. */
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -22,20 +22,22 @@ public class UserService {
   private final UserRepository userRepository;
   private final FollowRepository followRepository;
   private final PasswordEncoder passwordEncoder;
+  private final UserAccountService userAccountService;
 
-  /** 회원가입 처리 */
+  /**
+   * 회원가입 처리
+   *
+   * @param requestUser 회원가입 요청 데이터
+   * @return 등록된 사용자 정보
+   */
   @Transactional
   public UserResponseDTO.RegisterResponse registerUser(
       UserRequestDTO.RegisterRequest.User requestUser) {
     // 이메일 중복 검사
-    if (userRepository.existsByEmail(requestUser.getEmail())) {
-      throw new DuplicateResourceException("이미 가입된 이메일 주소입니다.");
-    }
+    userAccountService.validateEmailNotExists(requestUser.getEmail());
 
     // 계정명 중복 검사
-    if (userRepository.existsByAccountname(requestUser.getAccountname())) {
-      throw new DuplicateResourceException("이미 사용중인 계정 ID입니다.");
-    }
+    userAccountService.validateAccountnameNotExists(requestUser.getAccountname());
 
     // 이미지가 없는 경우 기본 이미지 설정
     String imageUrl = requestUser.getImage();
@@ -61,7 +63,12 @@ public class UserService {
     return UserResponseDTO.RegisterResponse.fromEntity(savedUser);
   }
 
-  /** 사용자 ID로 조회 */
+  /**
+   * 사용자 ID로 조회
+   *
+   * @param id 사용자 ID
+   * @return 사용자 객체
+   */
   @Transactional(readOnly = true)
   public User getUserById(String id) {
     return userRepository
@@ -69,42 +76,49 @@ public class UserService {
         .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다: " + id));
   }
 
+  /**
+   * 사용자 이메일로 조회
+   *
+   * @param email 사용자 이메일
+   * @return 사용자 객체
+   */
   @Transactional(readOnly = true)
-  public UserResponseDTO.AccountValidResponse validateAccountname(String accountname) {
-    boolean exists = userRepository.existsByAccountname(accountname);
-
-    String message = exists ? "이미 가입된 계정ID 입니다." : "사용 가능한 계정ID 입니다.";
-
-    return UserResponseDTO.AccountValidResponse.builder().message(message).build();
+  public User getUserByEmail(String email) {
+    return userRepository
+        .findByEmail(email)
+        .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
   }
 
-  /** 이메일 중복 검증 */
-  @Transactional(readOnly = true)
-  public UserResponseDTO.EmailValidResponse validateEmail(String email) {
-    boolean exists = userRepository.existsByEmail(email);
-
-    String message = exists ? "이미 가입된 이메일 주소 입니다." : "사용 가능한 이메일 입니다.";
-
-    return UserResponseDTO.EmailValidResponse.builder().message(message).build();
-  }
-
-  /** 프로필 업데이트 */
+  /**
+   * 프로필 업데이트
+   *
+   * @param email 현재 사용자 이메일
+   * @param profileUser 업데이트할 프로필 정보
+   * @return 업데이트된 프로필 정보
+   */
   @Transactional
   public ProfileDTO.ProfileResponse updateProfile(
       String email, UserRequestDTO.UpdateProfileRequest.ProfileUser profileUser) {
     // 현재 사용자 찾기
-    User user =
-        userRepository
-            .findByEmail(email)
-            .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
+    User user = getUserByEmail(email);
 
     // 계정명이 변경되었고, 이미 다른 사용자가 사용 중인지 확인
-    if (!user.getAccountname().equals(profileUser.getAccountname())
-        && userRepository.existsByAccountname(profileUser.getAccountname())) {
-      throw new DuplicateResourceException("이미 사용중이 계정 ID입니다.");
+    if (!user.getAccountname().equals(profileUser.getAccountname())) {
+      userAccountService.validateAccountnameNotExists(profileUser.getAccountname());
     }
 
     // 사용자 정보 업데이트
+    updateUserInfo(user, profileUser);
+
+    // 팔로워/팔로잉 목록 조회
+    ProfileDTO.Profile profile = buildUserProfile(user);
+
+    return ProfileDTO.ProfileResponse.builder().profile(profile).build();
+  }
+
+  /** 사용자 정보 업데이트 */
+  private void updateUserInfo(
+      User user, UserRequestDTO.UpdateProfileRequest.ProfileUser profileUser) {
     user.setUsername(profileUser.getUsername());
     user.setAccountname(profileUser.getAccountname());
     user.setIntro(profileUser.getIntro());
@@ -116,60 +130,35 @@ public class UserService {
 
     // 저장
     userRepository.save(user);
-
-    // 팔로워/팔로잉 목록 조회
-    List<String> followers =
-        followRepository.findByFollowingId(user.getId()).stream()
-            .map(follow -> follow.getFollowerId())
-            .collect(Collectors.toList());
-
-    List<String> following =
-        followRepository.findByFollowerId(user.getId()).stream()
-            .map(follow -> follow.getFollowingId())
-            .collect(Collectors.toList());
-
-    // 응답 생성
-    ProfileDTO.Profile profile =
-        ProfileDTO.Profile.fromEntity(
-            user,
-            false, // 자신의 프로필이므로 isfollow는 false
-            following,
-            followers,
-            following.size(),
-            followers.size());
-
-    return ProfileDTO.ProfileResponse.builder().profile(profile).build();
   }
 
-  /** 사용자 검색 */
-  @Transactional(readOnly = true)
-  public List<UserResponseDTO.SearchUserResponse> searchUsers(String keyword) {
-    List<User> users = userRepository.findByUsernameContainingOrAccountnameContaining(keyword);
+  /** 사용자 프로필 정보 구성 */
+  private ProfileDTO.Profile buildUserProfile(User user) {
+    // 팔로워/팔로잉 목록 조회
+    List<String> followers = getFollowers(user);
+    List<String> following = getFollowings(user);
 
-    return users.stream()
-        .map(
-            user -> {
-              // 팔로워/팔로잉 정보 조회
-              List<String> following =
-                  followRepository.findByFollowerId(user.getId()).stream()
-                      .map(follow -> follow.getFollowingId())
-                      .collect(Collectors.toList());
+    // 응답 생성
+    return ProfileDTO.Profile.fromEntity(
+        user,
+        false, // 자신의 프로필이므로 isfollow는 false
+        following,
+        followers,
+        following.size(),
+        followers.size());
+  }
 
-              List<String> followers =
-                  followRepository.findByFollowingId(user.getId()).stream()
-                      .map(follow -> follow.getFollowerId())
-                      .collect(Collectors.toList());
+  /** 팔로워 목록 조회 */
+  private List<String> getFollowers(User user) {
+    return followRepository.findByFollowingId(user.getId()).stream()
+        .map(follow -> follow.getFollowerId())
+        .collect(Collectors.toList());
+  }
 
-              return UserResponseDTO.SearchUserResponse.builder()
-                  .id(user.getId())
-                  .username(user.getUsername())
-                  .accountname(user.getAccountname())
-                  .following(following)
-                  .follower(followers)
-                  .followerCount(followers.size())
-                  .followingCount(following.size())
-                  .build();
-            })
+  /** 팔로잉 목록 조회 */
+  private List<String> getFollowings(User user) {
+    return followRepository.findByFollowerId(user.getId()).stream()
+        .map(follow -> follow.getFollowingId())
         .collect(Collectors.toList());
   }
 }

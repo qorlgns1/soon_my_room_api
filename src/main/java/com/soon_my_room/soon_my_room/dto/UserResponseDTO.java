@@ -73,5 +73,20 @@ public class UserResponseDTO {
     private List<String> follower;
     private int followerCount;
     private int followingCount;
+
+    /** 엔티티로부터 SearchUserResponse 객체 생성 */
+    public static SearchUserResponse fromEntity(
+        User user, List<String> following, List<String> follower) {
+
+      return SearchUserResponse.builder()
+          .id(user.getId())
+          .username(user.getUsername())
+          .accountname(user.getAccountname())
+          .following(following)
+          .follower(follower)
+          .followerCount(follower.size())
+          .followingCount(following.size())
+          .build();
+    }
   }
 }

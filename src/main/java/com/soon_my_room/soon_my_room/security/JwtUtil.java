@@ -1,7 +1,6 @@
 package com.soon_my_room.soon_my_room.security;
 
 import com.soon_my_room.soon_my_room.exception.JwtAuthenticationException;
-import com.soon_my_room.soon_my_room.model.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
@@ -14,6 +13,7 @@ import java.util.function.Function;
 import javax.crypto.SecretKey;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -36,16 +36,17 @@ public class JwtUtil {
     this.signingKey = Keys.hmacShaKeyFor(keyBytes);
   }
 
-  public String generateAccessToken(User userDetails) {
+  public String generateAccessToken(UserDetails userDetails) {
     return generateToken(new HashMap<>(), userDetails, accessTokenExpiration);
   }
 
-  public String generateRefreshToken(User userDetails) {
+  public String generateRefreshToken(UserDetails userDetails) {
     return generateToken(new HashMap<>(), userDetails, refreshTokenExpiration);
   }
 
   // 토큰 생성 기능은 같으나 만료 시간을 파라미터로 받음
-  private String generateToken(Map<String, Object> extraClaims, User userDetails, long expiration) {
+  private String generateToken(
+      Map<String, Object> extraClaims, UserDetails userDetails, long expiration) {
     return Jwts.builder()
         .subject(userDetails.getUsername())
         .claims(extraClaims)
@@ -118,12 +119,11 @@ public class JwtUtil {
   }
 
   // 토큰 유효성 검사
-  public Boolean validateToken(String token, User userDetails) {
+  public Boolean validateToken(String token, UserDetails userDetails) {
     try {
       final String email = extractEmail(token);
       return (email.equals(userDetails.getUsername()) && !isTokenExpired(token));
     } catch (JwtAuthenticationException e) {
-      // 이미 특정 예외 유형으로 포장되어 있으므로 다시 던짐
       throw e;
     } catch (Exception e) {
       throw new JwtAuthenticationException(
@@ -134,7 +134,6 @@ public class JwtUtil {
 
   // 토큰 만료 확인
   private Boolean isTokenExpired(String token) {
-    // 토큰 만료 시간 추출 후 현재 시간과 비교
     return extractExpiration(token).before(new Date());
   }
 }

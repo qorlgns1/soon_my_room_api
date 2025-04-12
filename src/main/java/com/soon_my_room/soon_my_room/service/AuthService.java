@@ -8,12 +8,14 @@ import com.soon_my_room.soon_my_room.exception.ResourceNotFoundException;
 import com.soon_my_room.soon_my_room.model.User;
 import com.soon_my_room.soon_my_room.repository.UserRepository;
 import com.soon_my_room.soon_my_room.security.JwtUtil;
+import com.soon_my_room.soon_my_room.security.UserPrincipal;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,8 +42,12 @@ public class AuthService {
         userRepository
             .findByEmail(loginRequest.getEmail())
             .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
-    String accessToken = jwtUtil.generateAccessToken(user);
-    String refreshToken = jwtUtil.generateRefreshToken(user);
+
+    // User를 UserDetails로 변환
+    UserDetails userDetails = new UserPrincipal(user);
+
+    String accessToken = jwtUtil.generateAccessToken(userDetails);
+    String refreshToken = jwtUtil.generateRefreshToken(userDetails);
 
     // Refresh Token을 DB에 저장
     user.setRefreshToken(refreshToken);
@@ -79,8 +85,11 @@ public class AuthService {
           JwtAuthenticationException.ErrorType.TOKEN_INVALID_FORMAT);
     }
 
+    // User를 UserDetails로 변환
+    UserDetails userDetails = new UserPrincipal(user);
+
     // 새 Access Token 발급
-    String newAccessToken = jwtUtil.generateAccessToken(user);
+    String newAccessToken = jwtUtil.generateAccessToken(userDetails);
 
     // 응답에는 새 Access Token만 포함
     return LoginResponseDTO.fromEntity(user, newAccessToken);
@@ -98,7 +107,10 @@ public class AuthService {
               .findByEmail(email)
               .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-      boolean isValid = jwtUtil.validateToken(token, user);
+      // User를 UserDetails로 변환
+      UserDetails userDetails = new UserPrincipal(user);
+
+      boolean isValid = jwtUtil.validateToken(token, userDetails);
       return AuthResponseDTO.TokenValidResponse.builder().isValid(isValid).build();
     } catch (Exception e) {
       // 토큰 파싱 실패 등 모든 예외는 유효하지 않은 토큰으로 처리
