@@ -49,19 +49,11 @@ public class CommentController {
       @Parameter(description = "댓글 정보", required = true) @Valid @RequestBody
           CommentDTO.CommentRequest requestDTO,
       Authentication authentication) {
-
-    try {
-      String currentUserEmail = authentication.getName();
-
-      CommentDTO.CommentResponse response =
-          commentService.createComment(
-              postId, currentUserEmail, requestDTO.getComment().getContent());
-      return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    } catch (com.soon_my_room.soon_my_room.exception.ResourceNotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
-    }
+    String currentUserEmail = authentication.getName();
+    CommentDTO.CommentResponse response =
+        commentService.createComment(
+            postId, currentUserEmail, requestDTO.getComment().getContent());
+    return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
 
   @Operation(
@@ -80,16 +72,10 @@ public class CommentController {
       @Parameter(description = "페이지당 댓글 수") @RequestParam(required = false) Integer limit,
       @Parameter(description = "건너뛸 댓글 수") @RequestParam(required = false) Integer skip,
       Authentication authentication) {
-
-    try {
-      String currentUserEmail = authentication.getName();
-
-      CommentDTO.CommentListResponse response =
-          commentService.getComments(postId, currentUserEmail, limit, skip);
-      return ResponseEntity.ok(response);
-    } catch (com.soon_my_room.soon_my_room.exception.ResourceNotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
-    }
+    String currentUserEmail = authentication.getName();
+    CommentDTO.CommentListResponse response =
+        commentService.getComments(postId, currentUserEmail, limit, skip);
+    return ResponseEntity.ok(response);
   }
 
   @Operation(
@@ -109,17 +95,9 @@ public class CommentController {
       @Parameter(description = "댓글 ID", required = true) @PathVariable("comment_id")
           String commentId,
       Authentication authentication) {
-
-    try {
-      String currentUserEmail = authentication.getName();
-
-      commentService.deleteComment(postId, commentId, currentUserEmail);
-      return ResponseEntity.ok(Map.of("message", "댓글이 삭제되었습니다."));
-    } catch (com.soon_my_room.soon_my_room.exception.ResourceNotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
-    } catch (AccessDeniedException e) {
-      return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
-    }
+    String currentUserEmail = authentication.getName();
+    commentService.deleteComment(postId, commentId, currentUserEmail);
+    return ResponseEntity.ok(Map.of("message", "댓글이 삭제되었습니다."));
   }
 
   @Operation(
@@ -138,15 +116,9 @@ public class CommentController {
       @Parameter(description = "댓글 ID", required = true) @PathVariable("comment_id")
           String commentId,
       Authentication authentication) {
-
-    try {
-      String currentUserEmail = authentication.getName();
-
-      CommentDTO.ReportResponse response =
-          commentService.reportComment(postId, commentId, currentUserEmail);
-      return ResponseEntity.ok(response);
-    } catch (com.soon_my_room.soon_my_room.exception.ResourceNotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
-    }
+    String currentUserEmail = authentication.getName();
+    CommentDTO.ReportResponse response =
+        commentService.reportComment(postId, commentId, currentUserEmail);
+    return ResponseEntity.ok(response);
   }
 }

@@ -48,16 +48,10 @@ public class ProductController {
       @Parameter(description = "상품 정보", required = true) @Valid @RequestBody
           ProductDTO.ProductRequest requestDTO,
       Authentication authentication) {
-
-    try {
-      String currentUserEmail = authentication.getName();
-
-      ProductDTO.ProductResponse response =
-          productService.createProduct(currentUserEmail, requestDTO.getProduct());
-      return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    } catch (Exception e) {
-      return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
-    }
+    String currentUserEmail = authentication.getName();
+    ProductDTO.ProductResponse response =
+        productService.createProduct(currentUserEmail, requestDTO.getProduct());
+    return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
 
   @Operation(
@@ -76,17 +70,10 @@ public class ProductController {
       @Parameter(description = "페이지당 상품 수") @RequestParam(required = false) Integer limit,
       @Parameter(description = "건너뛸 상품 수") @RequestParam(required = false) Integer skip,
       Authentication authentication) {
-
-    try {
-      String currentUserEmail = authentication.getName();
-
-      ProductDTO.ProductListResponse response =
-          productService.getUserProducts(accountname, currentUserEmail, limit, skip);
-      return ResponseEntity.ok(response);
-    } catch (com.soon_my_room.soon_my_room.exception.ResourceNotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND)
-          .body(Map.of("message", "해당 계정이 존재하지 않습니다."));
-    }
+    String currentUserEmail = authentication.getName();
+    ProductDTO.ProductListResponse response =
+        productService.getUserProducts(accountname, currentUserEmail, limit, skip);
+    return ResponseEntity.ok(response);
   }
 
   @Operation(
@@ -104,16 +91,10 @@ public class ProductController {
       @Parameter(description = "상품 ID", required = true) @PathVariable("product_id")
           String productId,
       Authentication authentication) {
-
-    try {
-      String currentUserEmail = authentication.getName();
-
-      ProductDTO.ProductResponse response =
-          productService.getProductDetail(productId, currentUserEmail);
-      return ResponseEntity.ok(response);
-    } catch (com.soon_my_room.soon_my_room.exception.ResourceNotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "등록된 상품이 없습니다."));
-    }
+    String currentUserEmail = authentication.getName();
+    ProductDTO.ProductResponse response =
+        productService.getProductDetail(productId, currentUserEmail);
+    return ResponseEntity.ok(response);
   }
 
   @Operation(
@@ -135,24 +116,10 @@ public class ProductController {
       @Parameter(description = "상품 정보", required = true) @Valid @RequestBody
           ProductDTO.ProductRequest requestDTO,
       Authentication authentication) {
-
-    try {
-      String currentUserEmail = authentication.getName();
-
-      ProductDTO.ProductResponse response =
-          productService.updateProduct(productId, currentUserEmail, requestDTO.getProduct());
-      return ResponseEntity.ok(response);
-    } catch (com.soon_my_room.soon_my_room.exception.ResourceNotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "등록된 상품이 없습니다."));
-    } catch (AccessDeniedException e) {
-      return ResponseEntity.status(HttpStatus.FORBIDDEN)
-          .body(Map.of("message", "잘못된 요청입니다. 로그인 정보를 확인하세요."));
-    } catch (IllegalArgumentException e) {
-      if (e.getMessage().contains("price")) {
-        return ResponseEntity.badRequest().body(Map.of("message", "가격은 숫자로 입력하셔야 합니다."));
-      }
-      return ResponseEntity.badRequest().body(Map.of("message", "필수 입력사항을 입력해주세요."));
-    }
+    String currentUserEmail = authentication.getName();
+    ProductDTO.ProductResponse response =
+        productService.updateProduct(productId, currentUserEmail, requestDTO.getProduct());
+    return ResponseEntity.ok(response);
   }
 
   @Operation(
@@ -171,17 +138,8 @@ public class ProductController {
       @Parameter(description = "상품 ID", required = true) @PathVariable("product_id")
           String productId,
       Authentication authentication) {
-
-    try {
-      String currentUserEmail = authentication.getName();
-
-      productService.deleteProduct(productId, currentUserEmail);
-      return ResponseEntity.ok("삭제되었습니다.");
-    } catch (com.soon_my_room.soon_my_room.exception.ResourceNotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "등록된 상품이 없습니다."));
-    } catch (AccessDeniedException e) {
-      return ResponseEntity.status(HttpStatus.FORBIDDEN)
-          .body(Map.of("message", "잘못된 요청입니다. 로그인 정보를 확인하세요."));
-    }
+    String currentUserEmail = authentication.getName();
+    productService.deleteProduct(productId, currentUserEmail);
+    return ResponseEntity.ok("삭제되었습니다.");
   }
 }

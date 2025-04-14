@@ -41,15 +41,9 @@ public class HeartController {
   public ResponseEntity<?> addHeart(
       @Parameter(description = "게시글 ID", required = true) @PathVariable("post_id") String postId,
       Authentication authentication) {
-
-    try {
-      String currentUserEmail = authentication.getName();
-
-      PostDTO.PostResponse response = heartService.addHeart(postId, currentUserEmail);
-      return ResponseEntity.ok(response);
-    } catch (com.soon_my_room.soon_my_room.exception.ResourceNotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
-    }
+    String currentUserEmail = authentication.getName();
+    PostDTO.PostResponse response = heartService.addHeart(postId, currentUserEmail);
+    return ResponseEntity.ok(response);
   }
 
   @Operation(
@@ -66,14 +60,8 @@ public class HeartController {
   public ResponseEntity<?> removeHeart(
       @Parameter(description = "게시글 ID", required = true) @PathVariable("post_id") String postId,
       Authentication authentication) {
-
-    try {
-      String currentUserEmail = authentication.getName();
-
-      PostDTO.PostResponse response = heartService.removeHeart(postId, currentUserEmail);
-      return ResponseEntity.ok(response);
-    } catch (com.soon_my_room.soon_my_room.exception.ResourceNotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
-    }
+    String currentUserEmail = authentication.getName();
+    PostDTO.PostResponse response = heartService.removeHeart(postId, currentUserEmail);
+    return ResponseEntity.ok(response);
   }
 }

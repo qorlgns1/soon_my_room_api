@@ -108,15 +108,9 @@ public class PostController {
   public ResponseEntity<?> getPostDetail(
       @Parameter(description = "게시글 ID", required = true) @PathVariable("post_id") String postId,
       Authentication authentication) {
-
-    try {
-      String currentUserEmail = authentication.getName();
-
-      PostDTO.PostResponse response = postService.getPostDetail(postId, currentUserEmail);
-      return ResponseEntity.ok(response);
-    } catch (com.soon_my_room.soon_my_room.exception.ResourceNotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
-    }
+    String currentUserEmail = authentication.getName();
+    PostDTO.PostResponse response = postService.getPostDetail(postId, currentUserEmail);
+    return ResponseEntity.ok(response);
   }
 
   @Operation(
@@ -137,20 +131,10 @@ public class PostController {
       @Parameter(description = "게시글 정보", required = true) @Valid @RequestBody
           PostDTO.PostRequest requestDTO,
       Authentication authentication) {
-
-    try {
-      String currentUserEmail = authentication.getName();
-
-      PostDTO.PostResponse response =
-          postService.updatePost(postId, currentUserEmail, requestDTO.getPost());
-      return ResponseEntity.ok(response);
-    } catch (com.soon_my_room.soon_my_room.exception.ResourceNotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
-    } catch (AccessDeniedException e) {
-      return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
-    }
+    String currentUserEmail = authentication.getName();
+    PostDTO.PostResponse response =
+        postService.updatePost(postId, currentUserEmail, requestDTO.getPost());
+    return ResponseEntity.ok(response);
   }
 
   @Operation(
@@ -168,17 +152,9 @@ public class PostController {
   public ResponseEntity<?> deletePost(
       @Parameter(description = "게시글 ID", required = true) @PathVariable("post_id") String postId,
       Authentication authentication) {
-
-    try {
-      String currentUserEmail = authentication.getName();
-
-      postService.deletePost(postId, currentUserEmail);
-      return ResponseEntity.ok(Map.of("message", "삭제되었습니다."));
-    } catch (com.soon_my_room.soon_my_room.exception.ResourceNotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
-    } catch (AccessDeniedException e) {
-      return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
-    }
+    String currentUserEmail = authentication.getName();
+    postService.deletePost(postId, currentUserEmail);
+    return ResponseEntity.ok(Map.of("message", "삭제되었습니다."));
   }
 
   @Operation(
@@ -195,14 +171,8 @@ public class PostController {
   public ResponseEntity<?> reportPost(
       @Parameter(description = "게시글 ID", required = true) @PathVariable("post_id") String postId,
       Authentication authentication) {
-
-    try {
-      String currentUserEmail = authentication.getName();
-
-      PostDTO.ReportResponse response = postService.reportPost(postId, currentUserEmail);
-      return ResponseEntity.ok(response);
-    } catch (com.soon_my_room.soon_my_room.exception.ResourceNotFoundException e) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
-    }
+    String currentUserEmail = authentication.getName();
+    PostDTO.ReportResponse response = postService.reportPost(postId, currentUserEmail);
+    return ResponseEntity.ok(response);
   }
 }
