@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -44,8 +43,7 @@ public class HeartController {
       Authentication authentication) {
 
     try {
-      UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-      String currentUserEmail = userDetails.getUsername();
+      String currentUserEmail = authentication.getName();
 
       PostDTO.PostResponse response = heartService.addHeart(postId, currentUserEmail);
       return ResponseEntity.ok(response);
@@ -70,8 +68,7 @@ public class HeartController {
       Authentication authentication) {
 
     try {
-      UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-      String currentUserEmail = userDetails.getUsername();
+      String currentUserEmail = authentication.getName();
 
       PostDTO.PostResponse response = heartService.removeHeart(postId, currentUserEmail);
       return ResponseEntity.ok(response);

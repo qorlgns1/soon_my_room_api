@@ -15,7 +15,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -51,8 +50,7 @@ public class ProductController {
       Authentication authentication) {
 
     try {
-      UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-      String currentUserEmail = userDetails.getUsername();
+      String currentUserEmail = authentication.getName();
 
       ProductDTO.ProductResponse response =
           productService.createProduct(currentUserEmail, requestDTO.getProduct());
@@ -80,8 +78,7 @@ public class ProductController {
       Authentication authentication) {
 
     try {
-      UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-      String currentUserEmail = userDetails.getUsername();
+      String currentUserEmail = authentication.getName();
 
       ProductDTO.ProductListResponse response =
           productService.getUserProducts(accountname, currentUserEmail, limit, skip);
@@ -109,8 +106,7 @@ public class ProductController {
       Authentication authentication) {
 
     try {
-      UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-      String currentUserEmail = userDetails.getUsername();
+      String currentUserEmail = authentication.getName();
 
       ProductDTO.ProductResponse response =
           productService.getProductDetail(productId, currentUserEmail);
@@ -141,8 +137,7 @@ public class ProductController {
       Authentication authentication) {
 
     try {
-      UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-      String currentUserEmail = userDetails.getUsername();
+      String currentUserEmail = authentication.getName();
 
       ProductDTO.ProductResponse response =
           productService.updateProduct(productId, currentUserEmail, requestDTO.getProduct());
@@ -178,8 +173,7 @@ public class ProductController {
       Authentication authentication) {
 
     try {
-      UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-      String currentUserEmail = userDetails.getUsername();
+      String currentUserEmail = authentication.getName();
 
       productService.deleteProduct(productId, currentUserEmail);
       return ResponseEntity.ok("삭제되었습니다.");

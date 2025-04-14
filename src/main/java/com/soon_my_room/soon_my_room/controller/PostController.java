@@ -16,16 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/post")
@@ -51,17 +42,9 @@ public class PostController {
       @Parameter(description = "게시글 정보", required = true) @Valid @RequestBody
           PostDTO.PostRequest requestDTO,
       Authentication authentication) {
-
-    try {
-      UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-      String currentUserEmail = userDetails.getUsername();
-
-      PostDTO.PostResponse response =
-          postService.createPost(currentUserEmail, requestDTO.getPost());
-      return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
-    }
+    String userEmail = authentication.getName();
+    PostDTO.PostResponse response = postService.createPost(userEmail, requestDTO.getPost());
+    return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
 
   @Operation(
@@ -79,8 +62,7 @@ public class PostController {
       @Parameter(description = "건너뛸 게시글 수") @RequestParam(required = false) Integer skip,
       Authentication authentication) {
 
-    UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-    String currentUserEmail = userDetails.getUsername();
+    String currentUserEmail = authentication.getName();
 
     PostDTO.PostListResponse response = postService.getFeedPosts(currentUserEmail, limit, skip);
     return ResponseEntity.ok(response);
@@ -103,8 +85,7 @@ public class PostController {
       @Parameter(description = "건너뛸 게시글 수") @RequestParam(required = false) Integer skip,
       Authentication authentication) {
     System.out.println("[시작]");
-    UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-    String currentUserEmail = userDetails.getUsername();
+    String currentUserEmail = authentication.getName();
 
     PostDTO.PostResponse response =
         postService.getUserPosts(accountname, currentUserEmail, limit, skip);
@@ -129,8 +110,7 @@ public class PostController {
       Authentication authentication) {
 
     try {
-      UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-      String currentUserEmail = userDetails.getUsername();
+      String currentUserEmail = authentication.getName();
 
       PostDTO.PostResponse response = postService.getPostDetail(postId, currentUserEmail);
       return ResponseEntity.ok(response);
@@ -159,8 +139,7 @@ public class PostController {
       Authentication authentication) {
 
     try {
-      UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-      String currentUserEmail = userDetails.getUsername();
+      String currentUserEmail = authentication.getName();
 
       PostDTO.PostResponse response =
           postService.updatePost(postId, currentUserEmail, requestDTO.getPost());
@@ -191,8 +170,7 @@ public class PostController {
       Authentication authentication) {
 
     try {
-      UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-      String currentUserEmail = userDetails.getUsername();
+      String currentUserEmail = authentication.getName();
 
       postService.deletePost(postId, currentUserEmail);
       return ResponseEntity.ok(Map.of("message", "삭제되었습니다."));
@@ -219,8 +197,7 @@ public class PostController {
       Authentication authentication) {
 
     try {
-      UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-      String currentUserEmail = userDetails.getUsername();
+      String currentUserEmail = authentication.getName();
 
       PostDTO.ReportResponse response = postService.reportPost(postId, currentUserEmail);
       return ResponseEntity.ok(response);

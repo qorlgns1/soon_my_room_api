@@ -15,7 +15,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -52,8 +51,7 @@ public class CommentController {
       Authentication authentication) {
 
     try {
-      UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-      String currentUserEmail = userDetails.getUsername();
+      String currentUserEmail = authentication.getName();
 
       CommentDTO.CommentResponse response =
           commentService.createComment(
@@ -84,8 +82,7 @@ public class CommentController {
       Authentication authentication) {
 
     try {
-      UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-      String currentUserEmail = userDetails.getUsername();
+      String currentUserEmail = authentication.getName();
 
       CommentDTO.CommentListResponse response =
           commentService.getComments(postId, currentUserEmail, limit, skip);
@@ -114,8 +111,7 @@ public class CommentController {
       Authentication authentication) {
 
     try {
-      UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-      String currentUserEmail = userDetails.getUsername();
+      String currentUserEmail = authentication.getName();
 
       commentService.deleteComment(postId, commentId, currentUserEmail);
       return ResponseEntity.ok(Map.of("message", "댓글이 삭제되었습니다."));
@@ -144,8 +140,7 @@ public class CommentController {
       Authentication authentication) {
 
     try {
-      UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-      String currentUserEmail = userDetails.getUsername();
+      String currentUserEmail = authentication.getName();
 
       CommentDTO.ReportResponse response =
           commentService.reportComment(postId, commentId, currentUserEmail);

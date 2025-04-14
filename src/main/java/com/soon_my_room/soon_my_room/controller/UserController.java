@@ -6,7 +6,6 @@ import com.soon_my_room.soon_my_room.dto.LoginResponseDTO;
 import com.soon_my_room.soon_my_room.dto.UserRequestDTO;
 import com.soon_my_room.soon_my_room.dto.UserResponseDTO;
 import com.soon_my_room.soon_my_room.exception.JwtAuthenticationException;
-import com.soon_my_room.soon_my_room.security.UserPrincipal;
 import com.soon_my_room.soon_my_room.service.AuthService;
 import com.soon_my_room.soon_my_room.service.UserAccountService;
 import com.soon_my_room.soon_my_room.service.UserSearchService;
@@ -26,7 +25,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -47,16 +45,6 @@ public class UserController {
   private final UserAccountService userAccountService;
   private final UserSearchService userSearchService;
   private final AuthService authService;
-
-  /** 인증객체에서 이메일 추출 */
-  private String getEmailFromAuthentication(Authentication authentication) {
-    if (authentication.getPrincipal() instanceof UserPrincipal) {
-      return ((UserPrincipal) authentication.getPrincipal()).getUsername();
-    } else if (authentication.getPrincipal() instanceof UserDetails) {
-      return ((UserDetails) authentication.getPrincipal()).getUsername();
-    }
-    throw new IllegalArgumentException("지원되지 않는 인증 타입입니다");
-  }
 
   @Operation(summary = "회원 가입", description = "새로운 사용자를 등록합니다. 이메일, 비밀번호, 계정명, 사용자명은 필수 입력사항입니다.")
   @ApiResponses(
@@ -155,7 +143,7 @@ public class UserController {
   @PostMapping("/logout")
   public ResponseEntity<Map<String, String>> logout(
       Authentication authentication, HttpServletResponse response) {
-    String email = getEmailFromAuthentication(authentication);
+    String email = authentication.getName();
     authService.logout(email, response);
 
     Map<String, String> result = new HashMap<>();
